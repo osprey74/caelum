@@ -33,6 +33,12 @@ cd sidecar && pip install -r requirements.txt
 - online: False（GeoNames不使用）
 - ポート: 8765固定
 
+## CI/CD
+- GitHub Actions（Windows x86_64 + macOS Intel/ARM）でタグプッシュ時に自動ビルド
+- PyInstallerでサイドカーをバイナリ化 → Tauriでインストーラー生成
+- バージョン更新対象: `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`
+- `Cargo.lock` は `cargo generate-lockfile` で自動更新
+
 ## コーディング規約
 - TypeScript: strict mode、型定義は src/types/ に集約
 - Python: PEP8準拠、型ヒント必須（mypy対応）

@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            sidecar-ext: .exe
+            tauri-args: ''
+            pyinstaller-sep: ';'
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            sidecar-ext: ''
+            tauri-args: '--target aarch64-apple-darwin'
+            pyinstaller-sep: ':'
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            sidecar-ext: ''
+            tauri-args: '--target x86_64-apple-darwin'
+            pyinstaller-sep: ':'
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Python + PyInstaller でサイドカーバイナリ生成 ──
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          cd sidecar
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build sidecar binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd sidecar
+          pyinstaller main.py --onefile --name sidecar --add-data "data;data" --add-data "prompts;prompts"
+
+      - name: Build sidecar binary (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd sidecar
+          pyinstaller main.py --onefile --name sidecar --add-data "data:data" --add-data "prompts:prompts"
+
+      - name: Place sidecar binary for Tauri
+        shell: bash
+        run: |
+          mkdir -p src-tauri/binaries
+          cp "sidecar/dist/sidecar${{ matrix.sidecar-ext }}" \
+             "src-tauri/binaries/sidecar-${{ matrix.target }}${{ matrix.sidecar-ext }}"
+
+      # ── Node.js + Rust ──
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # ── Tauri ビルド & リリース ──
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Liber Caeli ${{ github.ref_name }}'
+          releaseBody: |
+            Windows および macOS 向けのバイナリです。
+
+            ---
+
+            Binaries for Windows and macOS.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.tauri-args }}
