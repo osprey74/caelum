@@ -1,7 +1,8 @@
 # HANDOFF: caelum（Liber Caeli）
 
-**作成日**: 2026-03-09  
-**ステータス**: 実装開始待ち  
+**作成日**: 2026-03-09
+**最終更新**: 2026-03-10
+**ステータス**: Phase 1 実装中（Step 10 完了 → 次回 UIコンポーネント実装から）
 **引き継ぎ先**: Claude Code
 
 ---
@@ -620,24 +621,80 @@ cd sidecar && pip install -r requirements.txt
 ## Phase 1 完了チェックリスト
 
 ```
-[ ] caelum/ ディレクトリ構造の作成
-[ ] npm create tauri-app でスキャフォールド
-[ ] sidecar/ の骨格実装（main.py + /health エンドポイント）
-[ ] sidecar 起動確認（uvicorn main:app --port 8765）
-[ ] Tauri から sidecar を externalBin として起動確認
-[ ] cities.py の都市辞書実装
-[ ] POST /chart エンドポイント実装・動作確認
-[ ] POST /interpret エンドポイント実装（SSE）
-[ ] GET /cities エンドポイント実装
-[ ] BirthDataForm.tsx：入力フォーム + 都市オートコンプリート
+[x] caelum/ ディレクトリ構造の作成                          ← Step 1（手動完了）
+[x] npm create tauri-app でスキャフォールド                  ← Step 1（手動完了）
+[x] Python仮想環境 + 依存パッケージインストール              ← Step 2（手動完了）
+[x] sidecar/ の骨格実装（main.py + /health エンドポイント）  ← Step 3（2026-03-09）
+[x] sidecar 起動確認（uvicorn main:app --port 8765）        ← Step 3（2026-03-09）
+[x] cities.py の都市辞書実装                                ← Step 4（2026-03-09）
+[x] スキーマ定義（models/schemas.py）                       ← Step 5（2026-03-10）
+[x] POST /chart エンドポイント実装・動作確認                 ← Step 6（2026-03-10）
+[x] GET /cities エンドポイント実装                           ← Step 6（2026-03-10）
+[x] POST /interpret エンドポイント実装（SSE）                ← Step 7（2026-03-10）
+[x] Tauri から sidecar を externalBin として起動確認         ← Step 8（2026-03-10）
+[x] フロントエンド APIクライアント（src/lib/api.ts）          ← Step 9（2026-03-10）
+[x] useSidecarReady フック（ヘルスチェックポーリング）        ← Step 10（2026-03-10）
+[ ] BirthDataForm.tsx：入力フォーム + 都市オートコンプリート  ← 次回ここから
 [ ] ChartWheel.tsx：D3.js チャート円盤（最小版）
 [ ] InterpretationPanel.tsx：SSEストリーミングテキスト表示
-[ ] useSidecarReady フック（ヘルスチェックポーリング）
-[ ] .env / .env.example / .gitignore 配置
-[ ] CLAUDE.md 配置
-[ ] README.md 作成
+[x] .env.example / .gitignore 配置                          ← 2026-03-10
+[x] CLAUDE.md 配置                                          ← 2026-03-10
+[x] README.md 作成                                          ← 2026-03-10
 [ ] GitHub リポジトリ caelum 作成・初回プッシュ
 ```
+
+---
+
+## 進捗ログ
+
+### 2026-03-09（初回セッション）
+
+**完了した作業:**
+- **Step 3**: サイドカー骨格実装
+  - `sidecar/main.py` — FastAPIエントリポイント（CORS、dotenv、`/health`）
+  - `sidecar/routers/chart.py`, `interpret.py` — ルータースタブ
+  - 各パッケージの `__init__.py` 作成（routers, services, models, prompts, data）
+  - `uvicorn main:app --port 8765` で起動し `/health` が `{"status":"ok"}` を返すことを確認済み
+- **Step 4**: 都市辞書実装
+  - `sidecar/data/cities.py` — 日本15都市＋海外10都市（計25都市）
+  - `get_city()`, `get_city_names()` の動作確認済み
+
+**次回の作業:**
+- Step 5（スキーマ定義）から再開
+- 各Stepは完了ごとにユーザー確認を取ってから次へ進める
+
+### 2026-03-10（第2セッション）
+
+**完了した作業:**
+- **Step 5**: スキーマ定義
+  - `sidecar/models/schemas.py` — `BirthData` Pydanticモデル
+- **Step 6**: チャート計算エンドポイント
+  - `sidecar/routers/chart.py` — `POST /chart`（kerykeion 5.11.1 API対応: `create_natal_chart_data`）
+  - `GET /cities` エンドポイント追加
+  - 動作確認済み: 天体18点、アスペクト63個返却
+- **Step 7**: 解釈エンドポイント（SSE）
+  - `sidecar/prompts/interpretation.py` — システムプロンプト
+  - `sidecar/routers/interpret.py` — `POST /interpret` SSEストリーミング（Claude API）
+  - APIキー未設定時の500エラー確認済み
+- **Step 8**: Tauri サイドカー起動設定
+  - `tauri-plugin-shell` 追加、`externalBin` 設定
+  - `lib.rs` にサイドカー起動コード（起動失敗時は手動起動を案内）
+  - ターゲットトリプル: `x86_64-pc-windows-msvc`
+  - `.gitignore` にPython/Tauri/環境変数の除外ルール追加
+  - `cargo check` コンパイル確認済み
+- **Step 9**: フロントエンド APIクライアント
+  - `src/lib/api.ts` — `fetchChart`, `fetchCities`, `streamInterpretation`
+- **Step 10**: サイドカー起動待機フック
+  - `src/hooks/useChart.ts` — `useSidecarReady`（500ms間隔ポーリング、15秒タイムアウト）
+- ドキュメント: CLAUDE.md、README.md、.env.example 配置
+
+**kerykeion API差異メモ（HANDOFF記載 → 実際）:**
+- `ChartDataFactory.get_natal_chart()` → `ChartDataFactory.create_natal_chart_data()`
+- `to_context()` はXML形式文字列を返す（正常動作）
+
+**次回の作業:**
+- UIコンポーネント実装から再開（BirthDataForm → ChartWheel → InterpretationPanel）
+- 各Stepは完了ごとにユーザー確認を取ってから次へ進める
 
 ---
 
