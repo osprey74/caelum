@@ -1,50 +1,97 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useSidecarReady } from "./hooks/useChart";
+import { fetchChart, BirthData } from "./lib/api";
+import BirthDataForm from "./components/BirthDataForm";
+import ChartWheel from "./components/ChartWheel";
+import PlanetTable from "./components/PlanetTable";
+import InterpretationPanel from "./components/InterpretationPanel";
+import { ChartResponse } from "./types/astrology";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const ready = useSidecarReady();
+  const [chartData, setChartData] = useState<ChartResponse | null>(null);
+  const [birthData, setBirthData] = useState<BirthData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  async function handleSubmit(data: BirthData) {
+    setLoading(true);
+    setError(null);
+    setBirthData(data);
+    try {
+      const result = await fetchChart(data);
+      setChartData(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "チャートの生成に失敗しました。");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-950 text-gray-400">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4" />
+          <p>サイドカーに接続中...</p>
+          <p className="text-xs mt-1 text-gray-600">
+            サイドカーを手動起動: cd sidecar && uvicorn main:app --port 8765
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="min-h-screen bg-gray-950 text-gray-100">
+      {/* Header */}
+      <header className="border-b border-gray-800 px-6 py-3">
+        <h1 className="text-xl font-bold tracking-wide">
+          Liber Caeli
+          <span className="text-sm font-normal text-gray-500 ml-2">天空の書</span>
+        </h1>
+      </header>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="flex h-[calc(100vh-53px)]">
+        {/* Left sidebar: Form */}
+        <aside className="w-80 shrink-0 border-r border-gray-800 p-4 overflow-auto">
+          <BirthDataForm onSubmit={handleSubmit} disabled={loading} />
+        </aside>
+
+        {/* Main: Chart + Table */}
+        <main className="flex-1 overflow-auto p-4">
+          {error && (
+            <div className="mb-4 rounded bg-red-900/40 border border-red-700 px-4 py-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
+          {loading && (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full" />
+            </div>
+          )}
+
+          {chartData && !loading && (
+            <div className="space-y-6">
+              <ChartWheel data={chartData} size={540} />
+              <PlanetTable data={chartData} />
+            </div>
+          )}
+
+          {!chartData && !loading && (
+            <div className="flex items-center justify-center py-20 text-gray-600">
+              出生データを入力してチャートを作成してください
+            </div>
+          )}
+        </main>
+
+        {/* Right sidebar: Interpretation */}
+        <aside className="w-96 shrink-0 border-l border-gray-800 p-4">
+          <InterpretationPanel birthData={birthData} />
+        </aside>
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   );
 }
 
