@@ -15,7 +15,7 @@
 | アプリ表示名 | **Liber Caeli**（リベル・カエリ）|
 | 意味 | ラテン語「天空の書」 |
 | 用途 | 個人利用デスクトップ占星術アプリ |
-| オーナー | Sohshi（Polaris Solutions Inc.） |
+| オーナー | osprey74 |
 
 ---
 
@@ -386,7 +386,7 @@ async def interpret_chart(data: BirthData):
     }]
   },
   "bundle": {
-    "identifier": "com.sohshi.liber-caeli",
+    "identifier": "com.osprey74.caelum",
     "externalBin": ["binaries/sidecar"]
   }
 }
