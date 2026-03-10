@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { fetchCities, BirthData } from "../lib/api";
 
 interface Props {
@@ -16,42 +16,10 @@ export default function BirthDataForm({ onSubmit, disabled }: Props) {
   const [city, setCity] = useState("");
 
   const [cities, setCities] = useState<string[]>([]);
-  const [filtered, setFiltered] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const suggestionsRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     fetchCities().then(setCities).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (city.length === 0) {
-      setFiltered([]);
-      return;
-    }
-    setFiltered(cities.filter((c) => c.includes(city)));
-    setSelectedIndex(-1);
-  }, [city, cities]);
-
-  function selectCity(c: string) {
-    setCity(c);
-    setShowSuggestions(false);
-  }
-
-  function handleCityKeyDown(e: React.KeyboardEvent) {
-    if (!showSuggestions || filtered.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, filtered.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && selectedIndex >= 0) {
-      e.preventDefault();
-      selectCity(filtered[selectedIndex]);
-    }
-  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -151,43 +119,23 @@ export default function BirthDataForm({ onSubmit, disabled }: Props) {
         </div>
       </div>
 
-      {/* 出生地（オートコンプリート） */}
-      <div className="relative">
-        <label className="block text-sm text-gray-400 mb-1">出生地</label>
-        <input
-          type="text"
+      {/* 出生地（ドロップダウン） */}
+      <div>
+        <label htmlFor="city-select" className="block text-sm text-gray-400 mb-1">出生地</label>
+        <select
+          id="city-select"
           value={city}
-          onChange={(e) => {
-            setCity(e.target.value);
-            setShowSuggestions(true);
-          }}
-          onFocus={() => setShowSuggestions(true)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-          onKeyDown={handleCityKeyDown}
-          placeholder="例: 東京"
+          onChange={(e) => setCity(e.target.value)}
           className="w-full rounded bg-gray-800 border border-gray-600 px-3 py-2 text-gray-100 focus:outline-none focus:border-indigo-500"
           disabled={disabled}
-        />
-        {showSuggestions && filtered.length > 0 && (
-          <ul
-            ref={suggestionsRef}
-            className="absolute z-10 w-full mt-1 max-h-48 overflow-auto rounded bg-gray-700 border border-gray-600 shadow-lg"
-          >
-            {filtered.map((c, i) => (
-              <li
-                key={c}
-                onMouseDown={() => selectCity(c)}
-                className={`px-3 py-2 cursor-pointer text-gray-100 ${
-                  i === selectedIndex
-                    ? "bg-indigo-600"
-                    : "hover:bg-gray-600"
-                }`}
-              >
-                {c}
-              </li>
-            ))}
-          </ul>
-        )}
+        >
+          <option value="">都市を選択...</option>
+          {cities.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* 送信ボタン */}

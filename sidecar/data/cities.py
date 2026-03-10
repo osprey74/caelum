@@ -42,5 +42,17 @@ def get_city(name: str) -> CityData | None:
     return CITIES.get(name)
 
 
+_JAPAN_TZ = "Asia/Tokyo"
+
+
 def get_city_names() -> list[str]:
-    return sorted(CITIES.keys())
+    """日本の都市を緯度が高い順、その後海外の都市名順で返す。"""
+    japan = [
+        (name, data) for name, data in CITIES.items() if data["tz"] == _JAPAN_TZ
+    ]
+    overseas = [
+        (name, data) for name, data in CITIES.items() if data["tz"] != _JAPAN_TZ
+    ]
+    japan.sort(key=lambda x: x[1]["lat"], reverse=True)
+    overseas.sort(key=lambda x: x[0])
+    return [name for name, _ in japan] + [name for name, _ in overseas]
