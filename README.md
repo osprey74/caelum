@@ -6,9 +6,10 @@
 
 ## 機能
 
-- 名前・生年月日時・出生地を入力してネイタルチャートを生成
-- SVGによるチャート円盤表示
-- Claude API（claude-sonnet-4-6）による日本語ストリーミング解釈
+- 名前・生年月日時・出生地（ドロップダウン選択）を入力してネイタルチャートを生成
+- D3.js SVGによるチャート円盤表示（サインリング、ハウス線、天体シンボル、アスペクト線）
+- 天体配置一覧表（サイン/度数/ハウス/逆行表示）
+- Claude API（claude-sonnet-4-6）による日本語ストリーミング解釈（Markdownレンダリング対応）
 
 ## 技術スタック
 
@@ -44,8 +45,8 @@ pip install -r requirements.txt
 ### 環境変数
 
 ```bash
-cp .env.example .env
-# .env を編集して ANTHROPIC_API_KEY を設定
+cp .env.example sidecar/.env
+# sidecar/.env を編集して ANTHROPIC_API_KEY を設定
 ```
 
 ### 開発サーバー起動

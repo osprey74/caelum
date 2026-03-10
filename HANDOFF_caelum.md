@@ -2,7 +2,7 @@
 
 **作成日**: 2026-03-09
 **最終更新**: 2026-03-10
-**ステータス**: Phase 1 完了（動作確認待ち）
+**ステータス**: Phase 1 完了（動作確認済み）
 **引き継ぎ先**: Claude Code
 
 ---
@@ -702,6 +702,22 @@ cd sidecar && pip install -r requirements.txt
 - `npx tsc --noEmit` + `npx vite build` 通過確認済み
 
 **Phase 1 全チェックリスト完了。次ステップは実動作確認。**
+
+### 2026-03-10（第2セッション後半 — AI解釈テスト＆UI改善）
+
+**完了した作業:**
+- **AI解釈テスト・修正**
+  - `interpret.py`: `async def generate()` → `def generate()`（同期ジェネレーター修正で500エラー解消）
+  - `interpret.py`: `max_tokens` 2000 → 8192（解釈テキスト途切れ対策）
+  - `interpretation.py`: プロンプトに文字数制限追加（全体2000字以内厳守）
+- **UI改善**
+  - `BirthDataForm.tsx`: 都市選択をオートコンプリートからドロップダウン `<select>` に変更
+  - `cities.py`: 都市の並び順を「日本（緯度高い順）→ 海外（名前順）」に変更
+  - `InterpretationPanel.tsx`: `react-markdown` によるMarkdownレンダリング対応（見出し・太字・引用・区切り線）
+
+**動作確認結果:**
+- チャート生成: 正常動作
+- AI解釈: ストリーミング正常、途切れなし、Markdown装飾表示OK
 
 ---
 

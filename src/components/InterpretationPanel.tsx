@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import Markdown from "react-markdown";
 import { streamInterpretation, BirthData } from "../lib/api";
 
 interface Props {
@@ -74,11 +75,23 @@ export default function InterpretationPanel({ birthData }: Props) {
 
       <div
         ref={textRef}
-        className="flex-1 overflow-auto rounded bg-gray-800/50 border border-gray-700 p-4 text-sm text-gray-200 leading-relaxed whitespace-pre-wrap"
+        className="flex-1 overflow-auto rounded bg-gray-800/50 border border-gray-700 p-4 text-sm text-gray-200 leading-relaxed"
       >
         {text ? (
           <>
-            {text}
+            <Markdown
+              components={{
+                h1: ({ children }) => <h1 className="text-xl font-bold text-gray-100 mt-4 mb-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-lg font-bold text-gray-200 mt-4 mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-base font-semibold text-gray-200 mt-3 mb-1">{children}</h3>,
+                hr: () => <hr className="border-gray-700 my-3" />,
+                p: ({ children }) => <p className="mb-2">{children}</p>,
+                strong: ({ children }) => <strong className="text-indigo-300 font-semibold">{children}</strong>,
+                blockquote: ({ children }) => <blockquote className="border-l-2 border-indigo-500 pl-3 text-gray-400 italic my-2">{children}</blockquote>,
+              }}
+            >
+              {text}
+            </Markdown>
             {loading && (
               <span className="inline-block w-2 h-4 ml-0.5 bg-indigo-400 animate-pulse" />
             )}
