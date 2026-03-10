@@ -23,8 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# 環境変数
+# 環境変数・設定
 .env
+sidecar/.env
+sidecar/config.json
 
 # Python
 sidecar/__pycache__/

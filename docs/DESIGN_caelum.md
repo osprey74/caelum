@@ -50,8 +50,8 @@
 | 方式 | 内容 |
 |---|---|
 | **`online=False`** | GeoNames API不使用・完全オフライン動作 |
-| **都市辞書内蔵** | `sidecar/data/cities.py` に日本・海外主要都市を収録 |
-| **手動入力フォールバック** | 辞書にない都市は緯度・経度・タイムゾーンを直接入力 |
+| **都市辞書内蔵** | `sidecar/data/cities.py` に日本全国65都市＋海外17都市を地方別グループで収録 |
+| **手動入力（常時表示）** | 辞書にない都市は緯度・経度・タイムゾーンを直接入力（ドロップダウン下に常時表示） |
 
 ### AI
 | 技術 | 用途 |
@@ -82,8 +82,10 @@
 │  ┌───────────────────────────────────────────────────┐  │
 │  │  Python Sidecar（FastAPI + uvicorn :8765）        │  │
 │  │                                                   │  │
-│  │  POST /chart      kerykeion 計算 → JSON返却       │  │
-│  │  POST /interpret  Claude API呼び出し → SSE返却    │  │
+│  │  POST /chart            kerykeion計算 → JSON      │  │
+│  │  POST /interpret        Claude API → SSE          │  │
+│  │  POST /generate-prompt  プロンプト生成(API不要)    │  │
+│  │  /settings/*            APIキー管理               │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -118,8 +120,9 @@ caelum/
 │   ├── components/
 │   │   ├── ChartWheel.tsx        # D3.js ネイタルチャート円盤
 │   │   ├── PlanetTable.tsx       # 天体配置一覧表
-│   │   ├── InterpretationPanel.tsx # AI解釈テキストパネル
-│   │   ├── BirthDataForm.tsx     # 入力フォーム（都市オートコンプリート含む）
+│   │   ├── InterpretationPanel.tsx # AI解釈/プロンプト生成パネル
+│   │   ├── BirthDataForm.tsx     # 入力フォーム（地方グループ付き都市選択＋緯度経度直接入力）
+│   │   ├── ApiKeyDialog.tsx      # APIキー設定ダイアログ
 │   │   └── ui/                   # 共通UIコンポーネント
 │   ├── hooks/
 │   │   ├── useChart.ts           # チャートデータ取得
@@ -134,11 +137,13 @@ caelum/
 ├── sidecar/                      # Pythonサイドカー
 │   ├── main.py                   # FastAPIエントリポイント
 │   ├── routers/
-│   │   ├── chart.py              # /chart エンドポイント
-│   │   └── interpret.py          # /interpret エンドポイント
+│   │   ├── chart.py              # /chart, /cities エンドポイント
+│   │   ├── interpret.py          # /interpret, /generate-prompt エンドポイント
+│   │   └── settings.py           # /settings/* APIキー管理エンドポイント
 │   ├── services/
 │   │   ├── kerykeion_service.py  # kerykeion ラッパー
-│   │   └── claude_service.py     # Claude API ラッパー
+│   │   ├── claude_service.py     # Claude API ラッパー
+│   │   └── settings.py           # APIキー永続化（config.json/.env）
 │   ├── models/
 │   │   └── schemas.py            # Pydantic スキーマ
 │   ├── prompts/
@@ -207,31 +212,25 @@ app.include_router(chart.router)
 app.include_router(interpret.router)
 ```
 
-#### kerykeion呼び出し（offline=False、都市辞書使用）
+#### kerykeion呼び出し（online=False、都市辞書使用）
 ```python
-# sidecar/data/cities.py
-CITIES = {
-    # 日本
-    "札幌":    {"lat": 43.0642, "lng": 141.3469, "tz": "Asia/Tokyo"},
-    "仙台":    {"lat": 38.2688, "lng": 140.8721, "tz": "Asia/Tokyo"},
-    "東京":    {"lat": 35.6762, "lng": 139.6503, "tz": "Asia/Tokyo"},
-    "横浜":    {"lat": 35.4437, "lng": 139.6380, "tz": "Asia/Tokyo"},
-    "名古屋":  {"lat": 35.1815, "lng": 136.9066, "tz": "Asia/Tokyo"},
-    "大阪":    {"lat": 34.6937, "lng": 135.5023, "tz": "Asia/Tokyo"},
-    "京都":    {"lat": 35.0116, "lng": 135.7681, "tz": "Asia/Tokyo"},
-    "神戸":    {"lat": 34.6901, "lng": 135.1956, "tz": "Asia/Tokyo"},
-    "広島":    {"lat": 34.3853, "lng": 132.4553, "tz": "Asia/Tokyo"},
-    "福岡":    {"lat": 33.5904, "lng": 130.4017, "tz": "Asia/Tokyo"},
-    "那覇":    {"lat": 26.2124, "lng": 127.6809, "tz": "Asia/Tokyo"},
-    "札幌":    {"lat": 43.0642, "lng": 141.3469, "tz": "Asia/Tokyo"},
-    # 海外主要都市
-    "ニューヨーク": {"lat": 40.7128, "lng": -74.0060, "tz": "America/New_York"},
-    "ロンドン":     {"lat": 51.5074, "lng": -0.1278,  "tz": "Europe/London"},
-    "パリ":         {"lat": 48.8566, "lng": 2.3522,   "tz": "Europe/Paris"},
-    "北京":         {"lat": 39.9042, "lng": 116.4074, "tz": "Asia/Shanghai"},
-    "ソウル":       {"lat": 37.5665, "lng": 126.9780, "tz": "Asia/Seoul"},
-    "シドニー":     {"lat": -33.8688, "lng": 151.2093,"tz": "Australia/Sydney"},
+# sidecar/data/cities.py — 地方グループ付き都市辞書
+# 日本: 北海道(10)、東北(6)、関東(7)、中部(9)、近畿(7)、中国(5)、四国(4)、九州・沖縄(8) = 56都市
+# 海外: 17都市（ニューヨーク、ロンドン、パリ、北京、ソウル、シドニー等）
+# 合計: 約73都市
+
+CITIES: dict[str, CityData] = {
+    "札幌": {"lat": 43.0642, "lng": 141.3469, "tz": "Asia/Tokyo"},
+    "東京": {"lat": 35.6762, "lng": 139.6503, "tz": "Asia/Tokyo"},
+    # ... 他都市省略
 }
+
+# 地方グループ定義（UIの optgroup 用）
+_JAPAN_GROUPS: list[CityGroup] = [
+    {"label": "北海道", "cities": ["稚内", "旭川", "北見", "網走", "根室", "釧路", "帯広", "札幌", "室蘭", "函館"]},
+    {"label": "東北", "cities": ["青森", "盛岡", "仙台", "秋田", "山形", "福島"]},
+    # ... 他地方省略
+]
 ```
 
 #### /chart エンドポイント（sidecar/routers/chart.py）
@@ -483,15 +482,20 @@ tauri::Builder::default()
 
 ## 9. 環境変数・シークレット管理
 
-```bash
-# .env（gitignore対象）
-ANTHROPIC_API_KEY=sk-ant-...
+APIキーはアプリ内の設定ダイアログから登録・削除可能。`sidecar/config.json` に永続化される。
+
+```
+# 優先順位:
+# 1. config.json（アプリ内設定）
+# 2. .env ファイル（フォールバック）
+# 3. 環境変数 ANTHROPIC_API_KEY
 ```
 
-Tauriからサイドカーへ環境変数を渡す方法：
-```rust
-// main.rs にて起動時に引き渡し
-// または OS の環境変数として設定しておく（個人利用のため簡易対応で可）
+```bash
+# .env（gitignore対象、フォールバック用）
+ANTHROPIC_API_KEY=sk-ant-...
+
+# config.json（gitignore対象、アプリが自動管理）
 ```
 
 ---

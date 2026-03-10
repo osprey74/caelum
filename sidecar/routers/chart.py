@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from kerykeion import AstrologicalSubjectFactory, ChartDataFactory
 
 from models.schemas import BirthData
-from data.cities import get_city, get_city_names
+from data.cities import get_city, get_city_names, get_grouped_cities
 
 router = APIRouter()
 
@@ -39,5 +39,5 @@ async def calculate_chart(data: BirthData):
 
 @router.get("/cities")
 async def list_cities():
-    """都市辞書のキー一覧を返す（フロントのオートコンプリート用）"""
-    return {"cities": get_city_names()}
+    """都市辞書のキー一覧を返す。"""
+    return {"cities": get_city_names(), "groups": get_grouped_cities()}

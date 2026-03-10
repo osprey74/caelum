@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Liber Caeli",
-        "width": 1200,
-        "height": 800,
+        "width": 1280,
+        "height": 1200,
         "resizable": true
       }
     ],

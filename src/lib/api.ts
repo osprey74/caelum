@@ -23,11 +23,55 @@ export async function fetchChart(data: BirthData) {
   return res.json();
 }
 
-export async function fetchCities(): Promise<string[]> {
+export interface CityGroup {
+  label: string;
+  cities: string[];
+}
+
+export async function fetchCityGroups(): Promise<CityGroup[]> {
   const res = await fetch(`${SIDECAR_URL}/cities`);
   const data = await res.json();
-  return data.cities;
+  return data.groups;
 }
+
+// --- APIキー設定 ---
+
+export async function fetchApiKeyStatus(): Promise<boolean> {
+  const res = await fetch(`${SIDECAR_URL}/settings/api-key-status`);
+  const data = await res.json();
+  return data.has_key;
+}
+
+export async function saveApiKey(apiKey: string): Promise<void> {
+  const res = await fetch(`${SIDECAR_URL}/settings/api-key`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+export async function deleteApiKey(): Promise<void> {
+  const res = await fetch(`${SIDECAR_URL}/settings/api-key`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+// --- プロンプト生成（APIキー不要） ---
+
+export async function generatePrompt(data: BirthData): Promise<string> {
+  const res = await fetch(`${SIDECAR_URL}/generate-prompt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const result = await res.json();
+  return result.prompt;
+}
+
+// --- AI解釈ストリーミング ---
 
 export function streamInterpretation(
   data: BirthData,
