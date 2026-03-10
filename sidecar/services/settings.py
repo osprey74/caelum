@@ -44,12 +44,9 @@ def _save_config(config: dict) -> None:
 
 
 def get_api_key() -> str | None:
-    """config.json → 環境変数 の優先順でAPIキーを取得。"""
+    """config.json からAPIキーを取得。"""
     config = _load_config()
-    key = config.get("anthropic_api_key")
-    if key:
-        return key
-    return os.environ.get("ANTHROPIC_API_KEY")
+    return config.get("anthropic_api_key") or None
 
 
 def set_api_key(key: str) -> None:

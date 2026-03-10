@@ -116,3 +116,7 @@ npm run tauri dev
 [MIT License](LICENSE)
 
 **注意**: 本アプリが依存する [kerykeion](https://github.com/g-battaglia/kerykeion) は AGPL v3 ライセンスです。kerykeion を含むバイナリの配布時は AGPL v3 の条件に従う必要があります。
+
+## アイコン
+
+<a href="https://www.flaticon.com/free-icons/orbit" title="orbit icons">Orbit icons created by Eucalyp - Flaticon</a>
