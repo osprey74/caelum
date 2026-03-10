@@ -2,7 +2,7 @@
 
 **作成日**: 2026-03-09
 **最終更新**: 2026-03-10
-**ステータス**: Phase 1 実装中（Step 10 完了 → 次回 UIコンポーネント実装から）
+**ステータス**: Phase 1 完了（動作確認待ち）
 **引き継ぎ先**: Claude Code
 
 ---
@@ -634,13 +634,13 @@ cd sidecar && pip install -r requirements.txt
 [x] Tauri から sidecar を externalBin として起動確認         ← Step 8（2026-03-10）
 [x] フロントエンド APIクライアント（src/lib/api.ts）          ← Step 9（2026-03-10）
 [x] useSidecarReady フック（ヘルスチェックポーリング）        ← Step 10（2026-03-10）
-[ ] BirthDataForm.tsx：入力フォーム + 都市オートコンプリート  ← 次回ここから
-[ ] ChartWheel.tsx：D3.js チャート円盤（最小版）
-[ ] InterpretationPanel.tsx：SSEストリーミングテキスト表示
+[x] BirthDataForm.tsx：入力フォーム + 都市オートコンプリート  ← 2026-03-10
+[x] ChartWheel.tsx：D3.js チャート円盤（最小版）              ← 2026-03-10
+[x] InterpretationPanel.tsx：SSEストリーミングテキスト表示    ← 2026-03-10
 [x] .env.example / .gitignore 配置                          ← 2026-03-10
 [x] CLAUDE.md 配置                                          ← 2026-03-10
 [x] README.md 作成                                          ← 2026-03-10
-[ ] GitHub リポジトリ caelum 作成・初回プッシュ
+[x] GitHub リポジトリ caelum 作成・初回プッシュ               ← 2026-03-10
 ```
 
 ---
@@ -661,7 +661,7 @@ cd sidecar && pip install -r requirements.txt
 
 **次回の作業:**
 - Step 5（スキーマ定義）から再開
-- 各Stepは完了ごとにユーザー確認を取ってから次へ進める
+
 
 ### 2026-03-10（第2セッション）
 
@@ -692,9 +692,16 @@ cd sidecar && pip install -r requirements.txt
 - `ChartDataFactory.get_natal_chart()` → `ChartDataFactory.create_natal_chart_data()`
 - `to_context()` はXML形式文字列を返す（正常動作）
 
-**次回の作業:**
-- UIコンポーネント実装から再開（BirthDataForm → ChartWheel → InterpretationPanel）
-- 各Stepは完了ごとにユーザー確認を取ってから次へ進める
+**UIコンポーネント実装（同セッション後半）:**
+- `BirthDataForm.tsx` — 入力フォーム＋都市オートコンプリート（キーボード操作対応）
+- `ChartWheel.tsx` — D3.js SVGチャート円盤（サインリング、ハウス線、天体シンボル、アスペクト線）
+- `PlanetTable.tsx` — 天体配置一覧表（サイン/度数/ハウス/逆行）
+- `InterpretationPanel.tsx` — SSEストリーミングテキスト表示（生成/中止ボタン）
+- `astrology.ts` — 型定義＋シンボル定数
+- `App.tsx` — 3カラムレイアウトで全コンポーネント接続
+- `npx tsc --noEmit` + `npx vite build` 通過確認済み
+
+**Phase 1 全チェックリスト完了。次ステップは実動作確認。**
 
 ---
 
