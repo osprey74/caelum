@@ -1,13 +1,33 @@
 """APIキー設定の永続化管理。
 
-config.json にAPIキーを保存し、.env はフォールバックとして使う。
+config.json にAPIキーを保存し、環境変数はフォールバックとして使う。
+保存先はOSのアプリデータディレクトリ:
+  Windows: %APPDATA%/liber-caeli/config.json
+  macOS:   ~/Library/Application Support/liber-caeli/config.json
+  Linux:   ~/.config/liber-caeli/config.json
 """
 
 import json
 import os
+import sys
 from pathlib import Path
 
-_CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
+_APP_NAME = "liber-caeli"
+
+
+def _get_config_dir() -> Path:
+    """OSに応じたアプリデータディレクトリを返す。"""
+    if sys.platform == "win32":
+        base = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    return base / _APP_NAME
+
+
+_CONFIG_DIR = _get_config_dir()
+_CONFIG_PATH = _CONFIG_DIR / "config.json"
 
 
 def _load_config() -> dict:
@@ -18,6 +38,7 @@ def _load_config() -> dict:
 
 
 def _save_config(config: dict) -> None:
+    _CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
 
