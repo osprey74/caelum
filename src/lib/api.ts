@@ -229,6 +229,28 @@ export async function generatePrompt(data: BirthData): Promise<string> {
   return result.prompt;
 }
 
+export async function generateTransitPrompt(data: TransitRequest): Promise<string> {
+  const res = await fetch(`${SIDECAR_URL}/generate-prompt-transit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const result = await res.json();
+  return result.prompt;
+}
+
+export async function generateSynastryPrompt(data: SynastryRequest): Promise<string> {
+  const res = await fetch(`${SIDECAR_URL}/generate-prompt-synastry`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const result = await res.json();
+  return result.prompt;
+}
+
 // --- AI解釈ストリーミング ---
 
 export function streamInterpretation(

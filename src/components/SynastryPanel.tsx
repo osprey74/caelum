@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import Markdown from "react-markdown";
-import { fetchProfiles, fetchSynastry, streamSynastryInterpretation, BirthData } from "../lib/api";
+import { fetchProfiles, fetchSynastry, streamSynastryInterpretation, generateSynastryPrompt, BirthData } from "../lib/api";
 import type { Profile, DualChartResponse, SynastryRequest } from "../types/astrology";
 
 interface Section {
@@ -36,9 +36,10 @@ interface Props {
   hasApiKey: boolean;
   onSynastryData: (data: DualChartResponse | null) => void;
   onTextChange?: (text: string) => void;
+  onPerson2NameChange?: (name: string) => void;
 }
 
-export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, onTextChange }: Props) {
+export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, onTextChange, onPerson2NameChange }: Props) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [person2Id, setPerson2Id] = useState("");
   const [person2Data, setPerson2Data] = useState<BirthData | null>(null);
@@ -46,6 +47,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
   const [interpText, setInterpText] = useState("");
   const [interpLoading, setInterpLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
@@ -69,6 +71,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
     setPerson2Id(id);
     if (!id) {
       setPerson2Data(null);
+      onPerson2NameChange?.("");
       return;
     }
     const profile = profiles.find((p) => p.id === id);
@@ -85,6 +88,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
         lng: profile.lng,
         timezone: profile.timezone,
       });
+      onPerson2NameChange?.(profile.name);
     }
   }
 
@@ -139,19 +143,39 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
     setInterpText("");
     setError(null);
     setInterpLoading(true);
+    setCopied(false);
     setCollapsedSections(new Set());
 
-    cancelRef.current = streamSynastryInterpretation(
-      req,
-      (chunk) => setInterpText((prev) => prev + chunk),
-      () => setInterpLoading(false),
-    );
+    if (hasApiKey) {
+      cancelRef.current = streamSynastryInterpretation(
+        req,
+        (chunk) => setInterpText((prev) => prev + chunk),
+        () => setInterpLoading(false),
+      );
+    } else {
+      generateSynastryPrompt(req)
+        .then((prompt) => setInterpText(prompt))
+        .catch((e) =>
+          setError(e instanceof Error ? e.message : "プロンプト生成に失敗しました。"),
+        )
+        .finally(() => setInterpLoading(false));
+    }
   }
 
   function handleCancel() {
     cancelRef.current?.();
     cancelRef.current = null;
     setInterpLoading(false);
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(interpText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
   }
 
   const sections = useMemo(() => splitSections(interpText), [interpText]);
@@ -176,6 +200,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
     blockquote: ({ children }: { children?: React.ReactNode }) => <blockquote className="border-l-2 border-pink-500 pl-3 text-gray-400 italic my-2">{children}</blockquote>,
   };
 
+  const isPromptMode = !hasApiKey;
   const btnClass = "rounded px-3 py-1.5 text-sm text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
   const canCalculate = !!birthData && !!person2Data && !loading;
 
@@ -236,26 +261,32 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
 
       {/* Interpretation */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-gray-400">AI 解釈</span>
+        <span className="text-sm text-gray-400">{isPromptMode ? "AI プロンプト" : "AI 解釈"}</span>
         <div className="flex gap-2">
-          {interpLoading ? (
+          {interpText && !interpLoading && (
+            <button type="button" onClick={handleCopy}
+              className="rounded bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600 transition-colors">
+              {copied ? "コピー済み" : "コピー"}
+            </button>
+          )}
+          {interpLoading && hasApiKey ? (
             <button type="button" onClick={handleCancel}
               className={`${btnClass} bg-red-700 hover:bg-red-600`}>
               中止
             </button>
           ) : (
             <button type="button" onClick={handleInterpret}
-              disabled={!canCalculate || !hasApiKey || interpLoading}
+              disabled={!canCalculate || interpLoading}
               className={`${btnClass} bg-pink-600 hover:bg-pink-500`}>
-              解釈を生成
+              {isPromptMode ? "プロンプトを生成" : "解釈を生成"}
             </button>
           )}
         </div>
       </div>
 
-      {!hasApiKey && (
+      {isPromptMode && !interpText && !interpLoading && (
         <div className="mb-2 rounded bg-amber-900/30 border border-amber-700 px-3 py-2 text-xs text-amber-300">
-          APIキー未設定のため、シナストリー解釈は利用できません。
+          APIキー未設定のため、プロンプト生成モードです。生成されたテキストをお使いのAIにコピー＆ペーストしてください。
         </div>
       )}
 
@@ -265,7 +296,9 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
       >
         {interpText ? (
           <>
-            {hasSections ? (
+            {isPromptMode ? (
+              <pre className="whitespace-pre-wrap font-mono text-xs">{interpText}</pre>
+            ) : hasSections ? (
               <div className="space-y-1">
                 {sections.map((sec, idx) => {
                   const isCollapsed = collapsedSections.has(idx);
@@ -296,7 +329,9 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
         ) : (
           <p className="text-gray-500">
             {birthData
-              ? "2人目を選択し「シナストリーを計算」ボタンを押すと、相性チャートが表示されます。"
+              ? isPromptMode
+                ? "2人目を選択し「シナストリーを計算」後、「プロンプトを生成」ボタンを押すとAIに渡すテキストが生成されます。"
+                : "2人目を選択し「シナストリーを計算」ボタンを押すと、相性チャートが表示されます。"
               : "まず出生データを入力してチャートを作成してください。"}
           </p>
         )}

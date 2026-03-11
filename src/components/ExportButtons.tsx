@@ -5,10 +5,11 @@ import type { ChartWheelHandle } from "./ChartWheel";
 interface Props {
   chartRef: React.RefObject<ChartWheelHandle | null>;
   subjectName: string;
+  fileBaseName: string;
   interpretationText: string;
 }
 
-export default function ExportButtons({ chartRef, subjectName, interpretationText }: Props) {
+export default function ExportButtons({ chartRef, subjectName, fileBaseName, interpretationText }: Props) {
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -25,8 +26,7 @@ export default function ExportButtons({ chartRef, subjectName, interpretationTex
   async function handleSvg() {
     const svg = getSvg();
     if (!svg) return;
-    const filename = `${subjectName || "chart"}_natal.svg`;
-    exportSvg(svg, filename);
+    exportSvg(svg, `${fileBaseName}.svg`);
     setToast("SVGをエクスポートしました");
   }
 
@@ -35,8 +35,7 @@ export default function ExportButtons({ chartRef, subjectName, interpretationTex
     if (!svg) return;
     setExporting(true);
     try {
-      const filename = `${subjectName || "chart"}_natal.png`;
-      await exportPng(svg, filename);
+      await exportPng(svg, `${fileBaseName}.png`);
       setToast("PNGをエクスポートしました");
     } finally {
       setExporting(false);
@@ -48,8 +47,7 @@ export default function ExportButtons({ chartRef, subjectName, interpretationTex
     if (!svg) return;
     setExporting(true);
     try {
-      const filename = `${subjectName || "chart"}_report.pdf`;
-      await exportPdf(svg, subjectName, interpretationText, filename);
+      await exportPdf(svg, subjectName, interpretationText, `${fileBaseName}.pdf`);
       setToast("PDFをエクスポートしました");
     } finally {
       setExporting(false);

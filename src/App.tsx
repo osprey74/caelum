@@ -29,6 +29,8 @@ function App() {
   const [transitData, setTransitData] = useState<DualChartResponse | null>(null);
   const [synastryData, setSynastryData] = useState<DualChartResponse | null>(null);
   const [rightTab, setRightTab] = useState<RightTab>("interpretation");
+  const [transitDate, setTransitDate] = useState("");
+  const [person2Name, setPerson2Name] = useState("");
   const chartRef = useRef<ChartWheelHandle>(null);
 
   const handleNatalTextChange = useCallback((text: string) => {
@@ -44,6 +46,23 @@ function App() {
   const activeInterpText = rightTab === "transit" ? transitInterpText
     : rightTab === "synastry" ? synastryInterpText
     : natalInterpText;
+
+  const todayStamp = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  })();
+
+  const fileBaseName = (() => {
+    const name = chartData?.subject.name || "chart";
+    if (rightTab === "transit" && transitDate) {
+      const datePart = transitDate.replace(/-/g, "");
+      return `${name}_トランジット${datePart}_${todayStamp}`;
+    }
+    if (rightTab === "synastry" && person2Name) {
+      return `${name}_シナストリー-${person2Name}_${todayStamp}`;
+    }
+    return `${name}_ネイタル解釈_${todayStamp}`;
+  })();
 
   useEffect(() => {
     if (ready) {
@@ -143,6 +162,7 @@ function App() {
               <ExportButtons
                 chartRef={chartRef}
                 subjectName={chartData.subject.name}
+                fileBaseName={fileBaseName}
                 interpretationText={activeInterpText}
               />
               <PlanetTable data={chartData} />
@@ -185,6 +205,7 @@ function App() {
                 hasApiKey={hasApiKey}
                 onTransitData={setTransitData}
                 onTextChange={handleTransitTextChange}
+                onTransitDateChange={setTransitDate}
               />
             ) : (
               <SynastryPanel
@@ -192,6 +213,7 @@ function App() {
                 hasApiKey={hasApiKey}
                 onSynastryData={setSynastryData}
                 onTextChange={handleSynastryTextChange}
+                onPerson2NameChange={setPerson2Name}
               />
             )}
           </div>

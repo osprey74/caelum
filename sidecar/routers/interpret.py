@@ -152,3 +152,73 @@ async def generate_prompt(data: BirthData):
 {xml_context}"""
 
     return {"prompt": prompt_text}
+
+
+@router.post("/generate-prompt-transit")
+async def generate_prompt_transit(data: TransitRequest):
+    """APIキー不要。トランジット解釈用プロンプトを生成して返す。"""
+    lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
+    natal_subject = _build_subject(data.name, data.year, data.month, data.day,
+                                   data.hour, data.minute, lat, lng, tz_str)
+    transit_subject = _build_subject(
+        "Transit", data.transit_year, data.transit_month, data.transit_day,
+        data.transit_hour, data.transit_minute, lat, lng, tz_str,
+    )
+
+    natal_context = to_context(natal_subject)
+    transit_context = to_context(transit_subject)
+
+    user_content = f"""## ネイタルチャート（出生図）
+{natal_context}
+
+## トランジット天体（{data.transit_year}年{data.transit_month}月{data.transit_day}日）
+{transit_context}"""
+
+    prompt_text = f"""以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。
+
+---
+
+## システムプロンプト
+
+{TRANSIT_SYSTEM_PROMPT}
+
+---
+
+{user_content}"""
+
+    return {"prompt": prompt_text}
+
+
+@router.post("/generate-prompt-synastry")
+async def generate_prompt_synastry(data: SynastryRequest):
+    """APIキー不要。シナストリー解釈用プロンプトを生成して返す。"""
+    lat1, lng1, tz1 = _resolve_location(data.city1, data.lat1, data.lng1, data.timezone1)
+    lat2, lng2, tz2 = _resolve_location(data.city2, data.lat2, data.lng2, data.timezone2)
+
+    subject1 = _build_subject(data.name1, data.year1, data.month1, data.day1,
+                              data.hour1, data.minute1, lat1, lng1, tz1)
+    subject2 = _build_subject(data.name2, data.year2, data.month2, data.day2,
+                              data.hour2, data.minute2, lat2, lng2, tz2)
+
+    context1 = to_context(subject1)
+    context2 = to_context(subject2)
+
+    user_content = f"""## {data.name1}のネイタルチャート（出生図）
+{context1}
+
+## {data.name2}のネイタルチャート（出生図）
+{context2}"""
+
+    prompt_text = f"""以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。
+
+---
+
+## システムプロンプト
+
+{SYNASTRY_SYSTEM_PROMPT}
+
+---
+
+{user_content}"""
+
+    return {"prompt": prompt_text}

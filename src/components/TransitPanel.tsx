@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import Markdown from "react-markdown";
-import { fetchTransit, streamTransitInterpretation, BirthData } from "../lib/api";
+import { fetchTransit, streamTransitInterpretation, generateTransitPrompt, BirthData } from "../lib/api";
 import type { DualChartResponse, TransitRequest } from "../types/astrology";
 
 interface Section {
@@ -36,6 +36,7 @@ interface Props {
   hasApiKey: boolean;
   onTransitData: (data: DualChartResponse | null) => void;
   onTextChange?: (text: string) => void;
+  onTransitDateChange?: (date: string) => void;
 }
 
 function todayStr(): string {
@@ -43,12 +44,13 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTextChange }: Props) {
+export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTextChange, onTransitDateChange }: Props) {
   const [transitDate, setTransitDate] = useState(todayStr());
   const [loading, setLoading] = useState(false);
   const [interpText, setInterpText] = useState("");
   const [interpLoading, setInterpLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const cancelRef = useRef<(() => void) | null>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(new Set());
@@ -62,6 +64,10 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
   useEffect(() => {
     onTextChange?.(interpText);
   }, [interpText, onTextChange]);
+
+  useEffect(() => {
+    onTransitDateChange?.(transitDate);
+  }, [transitDate, onTransitDateChange]);
 
   function buildTransitRequest(): TransitRequest | null {
     if (!birthData) return null;
@@ -102,19 +108,39 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
     setInterpText("");
     setError(null);
     setInterpLoading(true);
+    setCopied(false);
     setCollapsedSections(new Set());
 
-    cancelRef.current = streamTransitInterpretation(
-      req,
-      (chunk) => setInterpText((prev) => prev + chunk),
-      () => setInterpLoading(false),
-    );
+    if (hasApiKey) {
+      cancelRef.current = streamTransitInterpretation(
+        req,
+        (chunk) => setInterpText((prev) => prev + chunk),
+        () => setInterpLoading(false),
+      );
+    } else {
+      generateTransitPrompt(req)
+        .then((prompt) => setInterpText(prompt))
+        .catch((e) =>
+          setError(e instanceof Error ? e.message : "プロンプト生成に失敗しました。"),
+        )
+        .finally(() => setInterpLoading(false));
+    }
   }
 
   function handleCancel() {
     cancelRef.current?.();
     cancelRef.current = null;
     setInterpLoading(false);
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(interpText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
   }
 
   const sections = useMemo(() => splitSections(interpText), [interpText]);
@@ -139,6 +165,7 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
     blockquote: ({ children }: { children?: React.ReactNode }) => <blockquote className="border-l-2 border-indigo-500 pl-3 text-gray-400 italic my-2">{children}</blockquote>,
   };
 
+  const isPromptMode = !hasApiKey;
   const btnClass = "rounded px-3 py-1.5 text-sm text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
@@ -176,26 +203,32 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
 
       {/* トランジット解釈 */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-gray-400">AI 解釈</span>
+        <span className="text-sm text-gray-400">{isPromptMode ? "AI プロンプト" : "AI 解釈"}</span>
         <div className="flex gap-2">
-          {interpLoading ? (
+          {interpText && !interpLoading && (
+            <button type="button" onClick={handleCopy}
+              className="rounded bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600 transition-colors">
+              {copied ? "コピー済み" : "コピー"}
+            </button>
+          )}
+          {interpLoading && hasApiKey ? (
             <button type="button" onClick={handleCancel}
               className={`${btnClass} bg-red-700 hover:bg-red-600`}>
               中止
             </button>
           ) : (
             <button type="button" onClick={handleInterpret}
-              disabled={!birthData || !hasApiKey || interpLoading}
+              disabled={!birthData || interpLoading}
               className={`${btnClass} bg-indigo-600 hover:bg-indigo-500`}>
-              解釈を生成
+              {isPromptMode ? "プロンプトを生成" : "解釈を生成"}
             </button>
           )}
         </div>
       </div>
 
-      {!hasApiKey && (
+      {isPromptMode && !interpText && !interpLoading && (
         <div className="mb-2 rounded bg-amber-900/30 border border-amber-700 px-3 py-2 text-xs text-amber-300">
-          APIキー未設定のため、トランジット解釈は利用できません。
+          APIキー未設定のため、プロンプト生成モードです。生成されたテキストをお使いのAIにコピー＆ペーストしてください。
         </div>
       )}
 
@@ -205,7 +238,9 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
       >
         {interpText ? (
           <>
-            {hasSections ? (
+            {isPromptMode ? (
+              <pre className="whitespace-pre-wrap font-mono text-xs">{interpText}</pre>
+            ) : hasSections ? (
               <div className="space-y-1">
                 {sections.map((sec, idx) => {
                   const isCollapsed = collapsedSections.has(idx);
@@ -236,7 +271,9 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
         ) : (
           <p className="text-gray-500">
             {birthData
-              ? "日付を選択し「計算」ボタンを押すと、トランジットチャートが表示されます。"
+              ? isPromptMode
+                ? "日付を選択し「計算」後、「プロンプトを生成」ボタンを押すとAIに渡すテキストが生成されます。"
+                : "日付を選択し「計算」ボタンを押すと、トランジットチャートが表示されます。"
               : "まず出生データを入力してチャートを作成してください。"}
           </p>
         )}
