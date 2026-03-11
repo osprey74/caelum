@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchProfiles, createProfile, deleteProfile, BirthData } from "../lib/api";
 import type { Profile } from "../types/astrology";
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function ProfileList({ onSelect, currentBirthData, disabled }: Props) {
+  const { t } = useTranslation();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
   const [saving, setSaving] = useState(false);
@@ -89,8 +91,8 @@ export default function ProfileList({ onSelect, currentBirthData, disabled }: Pr
   return (
     <div className="space-y-2 mb-4">
       <div className="flex items-center justify-between">
-        <label className="text-sm text-gray-400">保存済みプロファイル</label>
-        <span className="text-xs text-gray-600">{profiles.length}件</span>
+        <label className="text-sm text-gray-400">{t("profile.saved")}</label>
+        <span className="text-xs text-gray-600">{profiles.length}{t("profile.count")}</span>
       </div>
 
       <select
@@ -99,7 +101,7 @@ export default function ProfileList({ onSelect, currentBirthData, disabled }: Pr
         className={inputClass}
         disabled={disabled}
       >
-        <option value="">選択してください...</option>
+        <option value="">{t("profile.selectPlaceholder")}</option>
         {profiles.map((p) => (
           <option key={p.id} value={p.id}>
             {p.name}（{p.year}/{p.month}/{p.day}）
@@ -113,18 +115,18 @@ export default function ProfileList({ onSelect, currentBirthData, disabled }: Pr
           onClick={handleSave}
           disabled={disabled || !currentBirthData || saving}
           className="flex-1 rounded bg-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          title="現在の入力内容をプロファイルとして保存"
+          title={t("profile.saveTooltip")}
         >
-          {saving ? "保存中..." : "保存"}
+          {saving ? t("profile.saving") : t("profile.save")}
         </button>
         <button
           type="button"
           onClick={handleDelete}
           disabled={disabled || !selectedId}
           className="rounded bg-gray-700 px-3 py-1.5 text-xs text-red-400 hover:bg-red-900/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          title="選択中のプロファイルを削除"
+          title={t("profile.deleteTooltip")}
         >
-          削除
+          {t("profile.delete")}
         </button>
       </div>
     </div>

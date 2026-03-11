@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { fetchCityGroups, searchCity, CityGroup, BirthData, GeocodingResult } from "../lib/api";
 
 interface Props {
@@ -22,6 +23,7 @@ function clampedSetter(setter: (v: string) => void, min: number, max: number) {
 type CityMode = "dictionary" | "search";
 
 export default function BirthDataForm({ onSubmit, disabled, initialData }: Props) {
+  const { t, i18n } = useTranslation();
   const [name, setName] = useState("");
   const [year, setYear] = useState("");
   const [month, setMonth] = useState("");
@@ -48,8 +50,8 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
   const [manualTz, setManualTz] = useState("Asia/Tokyo");
 
   useEffect(() => {
-    fetchCityGroups().then(setGroups).catch(() => {});
-  }, []);
+    fetchCityGroups(i18n.language).then(setGroups).catch(() => {});
+  }, [i18n.language]);
 
   // プロファイル選択時にフォームを自動入力
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
     }
     setSearching(true);
     try {
-      const results = await searchCity(query);
+      const results = await searchCity(query, i18n.language);
       setSearchResults(results);
       setShowResults(true);
     } catch {
@@ -183,16 +185,16 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-lg font-bold text-gray-200">出生データ入力</h2>
+      <h2 className="text-lg font-bold text-gray-200">{t("form.title")}</h2>
 
       {/* 名前 */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">名前</label>
+        <label className="block text-sm text-gray-400 mb-1">{t("form.name")}</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="例: 太郎"
+          placeholder={t("form.namePlaceholder")}
           className={inputClass}
           disabled={disabled}
         />
@@ -200,13 +202,13 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
 
       {/* 生年月日 */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">生年月日</label>
+        <label className="block text-sm text-gray-400 mb-1">{t("form.birthDate")}</label>
         <div className="flex gap-2">
           <input
             type="number"
             value={year}
             onChange={(e) => setYear(e.target.value)}
-            placeholder="年"
+            placeholder={t("form.year")}
             min="1900"
             max="2100"
             className={`w-24 ${smallInputClass}`}
@@ -216,7 +218,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
             type="number"
             value={month}
             onChange={clampedSetter(setMonth, 1, 12)}
-            placeholder="月"
+            placeholder={t("form.month")}
             min="1"
             max="12"
             className={`w-20 ${smallInputClass}`}
@@ -226,7 +228,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
             type="number"
             value={day}
             onChange={clampedSetter(setDay, 1, 31)}
-            placeholder="日"
+            placeholder={t("form.day")}
             min="1"
             max="31"
             className={`w-20 ${smallInputClass}`}
@@ -237,13 +239,13 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
 
       {/* 出生時刻 */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">出生時刻</label>
+        <label className="block text-sm text-gray-400 mb-1">{t("form.birthTime")}</label>
         <div className="flex gap-2 items-center">
           <input
             type="number"
             value={hour}
             onChange={clampedSetter(setHour, 0, 23)}
-            placeholder="時"
+            placeholder={t("form.hour")}
             min="0"
             max="23"
             className={`w-20 ${smallInputClass}`}
@@ -254,7 +256,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
             type="number"
             value={minute}
             onChange={clampedSetter(setMinute, 0, 59)}
-            placeholder="分"
+            placeholder={t("form.minute")}
             min="0"
             max="59"
             className={`w-20 ${smallInputClass}`}
@@ -265,7 +267,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
 
       {/* 出生地 — モード切替 */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">出生地</label>
+        <label className="block text-sm text-gray-400 mb-1">{t("form.birthPlace")}</label>
         <div className="flex gap-2 mb-2">
           <button
             type="button"
@@ -277,7 +279,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
             }`}
             disabled={disabled}
           >
-            一覧から選択
+            {t("form.selectFromList")}
           </button>
           <button
             type="button"
@@ -289,7 +291,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
             }`}
             disabled={disabled}
           >
-            都市名で検索
+            {t("form.searchByName")}
           </button>
         </div>
 
@@ -302,12 +304,12 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
             className={inputClass}
             disabled={disabled}
           >
-            <option value="">都市を選択...</option>
+            <option value="">{t("form.selectCity")}</option>
             {groups.map((group) => (
               <optgroup key={group.label} label={group.label}>
                 {group.cities.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                  <option key={c.key} value={c.key}>
+                    {c.display}
                   </option>
                 ))}
               </optgroup>
@@ -332,7 +334,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
                     doSearch(searchQuery);
                   }
                 }}
-                placeholder="都市名を入力（例: 横浜、London）"
+                placeholder={t("form.searchPlaceholder")}
                 className={`flex-1 ${inputClass}`}
                 disabled={disabled}
               />
@@ -342,7 +344,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
                 disabled={disabled || searching || searchQuery.length < 2}
                 className="px-4 py-2 rounded bg-indigo-600 text-white text-sm hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                {searching ? "検索中..." : "検索"}
+                {searching ? t("form.searching") : t("form.search")}
               </button>
             </div>
 
@@ -360,7 +362,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
                     <div className="text-xs text-gray-500">
                       {result.lat.toFixed(4)}, {result.lng.toFixed(4)} | {result.timezone}
                       {result.source === "local" && (
-                        <span className="ml-2 text-indigo-400">内蔵辞書</span>
+                        <span className="ml-2 text-indigo-400">{t("form.builtinDict")}</span>
                       )}
                     </div>
                   </button>
@@ -370,14 +372,14 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
 
             {showResults && searchResults.length === 0 && !searching && searchQuery.length >= 2 && (
               <div className="absolute z-10 w-full mt-1 rounded bg-gray-800 border border-gray-600 px-3 py-2 text-sm text-gray-500">
-                該当する都市が見つかりませんでした
+                {t("form.noResults")}
               </div>
             )}
 
             {/* 選択済み表示 */}
             {selectedGeocode && (
               <div className="mt-2 rounded bg-gray-800/50 border border-indigo-500/30 p-2 text-sm">
-                <span className="text-indigo-400">選択中: </span>
+                <span className="text-indigo-400">{t("form.selected")}</span>
                 <span className="text-gray-200">{selectedGeocode.display_name}</span>
                 <span className="text-gray-500 ml-2">
                   ({selectedGeocode.lat.toFixed(4)}, {selectedGeocode.lng.toFixed(4)} | {selectedGeocode.timezone})
@@ -392,11 +394,11 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
       {cityMode === "dictionary" && (
         <div className="space-y-2 rounded bg-gray-800/50 border border-gray-700 p-3">
           <p className="text-xs text-gray-500">
-            都市リストにない場合、緯度・経度を直接入力できます
+            {t("form.manualCoordsHint")}
           </p>
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-0.5">緯度</label>
+              <label className="block text-xs text-gray-500 mb-0.5">{t("form.latitude")}</label>
               <input
                 type="number"
                 step="any"
@@ -408,7 +410,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs text-gray-500 mb-0.5">経度</label>
+              <label className="block text-xs text-gray-500 mb-0.5">{t("form.longitude")}</label>
               <input
                 type="number"
                 step="any"
@@ -421,16 +423,16 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
             </div>
           </div>
           <div>
-            <label htmlFor="tz-select" className="block text-xs text-gray-500 mb-0.5">タイムゾーン</label>
+            <label htmlFor="tz-select" className="block text-xs text-gray-500 mb-0.5">{t("form.timezone")}</label>
             <select
               id="tz-select"
-              aria-label="タイムゾーン"
+              aria-label={t("form.timezone")}
               value={manualTz}
               onChange={(e) => setManualTz(e.target.value)}
               className={`${inputClass} text-sm`}
               disabled={disabled}
             >
-              <option value="Asia/Tokyo">Asia/Tokyo（日本）</option>
+              <option value="Asia/Tokyo">{t("form.tzJapan")}</option>
               <option value="America/New_York">America/New_York</option>
               <option value="America/Chicago">America/Chicago</option>
               <option value="America/Los_Angeles">America/Los_Angeles</option>
@@ -458,7 +460,7 @@ export default function BirthDataForm({ onSubmit, disabled, initialData }: Props
         disabled={disabled || !isValid}
         className="w-full rounded bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
       >
-        チャートを作成
+        {t("form.createChart")}
       </button>
     </form>
   );

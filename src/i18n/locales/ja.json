@@ -1,0 +1,195 @@
+{
+  "app": {
+    "title": "Liber Caeli",
+    "subtitle": "天空の書",
+    "settings": "設定",
+    "connectingSidecar": "サイドカーに接続中...",
+    "sidecarHint": "サイドカーを手動起動: cd sidecar && uvicorn main:app --port 8765",
+    "noChartMessage": "出生データを入力してチャートを作成してください",
+    "chartError": "チャートの生成に失敗しました。"
+  },
+  "tabs": {
+    "natal": "ネイタル解釈",
+    "transit": "トランジット",
+    "synastry": "シナストリー",
+    "calendar": "月間カレンダー"
+  },
+  "form": {
+    "title": "出生データ入力",
+    "name": "名前",
+    "namePlaceholder": "例: 太郎",
+    "birthDate": "生年月日",
+    "year": "年",
+    "month": "月",
+    "day": "日",
+    "birthTime": "出生時刻",
+    "hour": "時",
+    "minute": "分",
+    "birthPlace": "出生地",
+    "selectFromList": "一覧から選択",
+    "searchByName": "都市名で検索",
+    "selectCity": "都市を選択...",
+    "searchPlaceholder": "都市名を入力（例: 横浜、London）",
+    "searching": "検索中...",
+    "search": "検索",
+    "noResults": "該当する都市が見つかりませんでした",
+    "builtinDict": "内蔵辞書",
+    "selected": "選択中: ",
+    "manualCoordsHint": "都市リストにない場合、緯度・経度を直接入力できます",
+    "latitude": "緯度",
+    "longitude": "経度",
+    "timezone": "タイムゾーン",
+    "tzJapan": "Asia/Tokyo（日本）",
+    "createChart": "チャートを作成"
+  },
+  "profile": {
+    "saved": "保存済みプロファイル",
+    "count": "件",
+    "selectPlaceholder": "選択してください...",
+    "saving": "保存中...",
+    "save": "保存",
+    "delete": "削除",
+    "saveTooltip": "現在の入力内容をプロファイルとして保存",
+    "deleteTooltip": "選択中のプロファイルを削除"
+  },
+  "common": {
+    "calculate": "計算",
+    "calculating": "計算中...",
+    "copy": "コピー",
+    "copied": "コピー済み",
+    "cancel": "中止",
+    "close": "閉じる",
+    "save": "保存",
+    "aiPrompt": "AI プロンプト",
+    "aiInterpretation": "AI 解釈",
+    "generatePrompt": "プロンプトを生成",
+    "generateInterpretation": "解釈を生成",
+    "noApiKeyMessage": "APIキー未設定のため、プロンプト生成モードです。生成されたテキストをお使いのAIにコピー＆ペーストしてください。",
+    "noChartFirst": "まず出生データを入力してチャートを作成してください。",
+    "promptError": "プロンプト生成に失敗しました。"
+  },
+  "interpretation": {
+    "promptHelp": "「プロンプトを生成」ボタンを押すと、AIに渡すテキストが生成されます。",
+    "aiHelp": "「解釈を生成」ボタンを押すと、Claude AIによる解釈が表示されます。",
+    "apiKeyHint": "ヘッダーの設定ボタンからAPIキーを登録するとAI自動解釈が利用できます。"
+  },
+  "transit": {
+    "title": "トランジット",
+    "dateLabel": "トランジット日付",
+    "error": "トランジット計算に失敗しました。",
+    "promptHelp": "日付を選択し「計算」後、「プロンプトを生成」ボタンを押すとAIに渡すテキストが生成されます。",
+    "aiHelp": "日付を選択し「計算」ボタンを押すと、トランジットチャートが表示されます。"
+  },
+  "synastry": {
+    "title": "シナストリー（相性）",
+    "person1": "1人目（ネイタルチャート）",
+    "person1Placeholder": "出生データを入力してください",
+    "person2": "2人目（プロファイルから選択）",
+    "selectPlaceholder": "選択してください...",
+    "noProfiles": "プロファイルがありません。左パネルで出生データを保存してください。",
+    "calculateSynastry": "シナストリーを計算",
+    "error": "シナストリー計算に失敗しました。",
+    "promptHelp": "2人目を選択し「シナストリーを計算」後、「プロンプトを生成」ボタンを押すとAIに渡すテキストが生成されます。",
+    "aiHelp": "2人目を選択し「シナストリーを計算」ボタンを押すと、相性チャートが表示されます。"
+  },
+  "calendar": {
+    "title": "月間カレンダー",
+    "error": "カレンダー計算に失敗しました。",
+    "weekdays": ["月", "火", "水", "木", "金", "土", "日"],
+    "monthEvents": "{{month}}月{{day}}日のイベント",
+    "noEvents": "この日にイベントはありません",
+    "monthlyFocus": "月間フォーカス",
+    "generateFocus": "月間フォーカスを生成",
+    "yearMonth": "{{year}}年{{month}}月",
+    "promptHelp": "「プロンプトを生成」ボタンを押すとAIに渡すテキストが生成されます。",
+    "aiHelp": "「月間フォーカスを生成」ボタンを押すと、今月の運勢が表示されます。",
+    "calcHelp": "「計算」ボタンを押すと月間トランジットカレンダーが表示されます。"
+  },
+  "export": {
+    "label": "エクスポート:",
+    "svgDone": "SVGをエクスポートしました",
+    "pngDone": "PNGをエクスポートしました",
+    "pdfDone": "PDFをエクスポートしました"
+  },
+  "settings": {
+    "title": "設定",
+    "apiKey": "APIキー",
+    "apiKeySet": "APIキーは設定済みです。",
+    "apiKeyOverwrite": "新しいキーで上書き...",
+    "apiKeyPlaceholder": "sk-ant-api03-...",
+    "houseSystem": "ハウスシステム",
+    "houseSystemHint": "変更後、次回のチャート生成から反映されます。",
+    "language": "言語",
+    "deleteKey": "キーを削除",
+    "saveError": "保存に失敗しました。",
+    "deleteError": "削除に失敗しました。"
+  },
+  "glossary": {
+    "planet": "天体",
+    "sign": "サイン",
+    "house": "ハウス",
+    "aspect": "アスペクト"
+  },
+  "planetTable": {
+    "planet": "天体",
+    "sign": "サイン",
+    "degree": "度数",
+    "house": "ハウス",
+    "retrograde": "逆行"
+  },
+  "planets": {
+    "Sun": "太陽",
+    "Moon": "月",
+    "Mercury": "水星",
+    "Venus": "金星",
+    "Mars": "火星",
+    "Jupiter": "木星",
+    "Saturn": "土星",
+    "Uranus": "天王星",
+    "Neptune": "海王星",
+    "Pluto": "冥王星",
+    "Chiron": "キロン",
+    "Mean_Lilith": "リリス",
+    "Pars_Fortunae": "フォルテュナ",
+    "ASC": "ASC",
+    "MC": "MC"
+  },
+  "aspects": {
+    "conjunction": "コンジャンクション (0°)",
+    "opposition": "オポジション (180°)",
+    "trine": "トライン (120°)",
+    "sextile": "セクスタイル (60°)",
+    "square": "スクエア (90°)",
+    "semi_square": "セミスクエア (45°)",
+    "quincunx": "クインカンクス (150°)"
+  },
+  "chart": {
+    "transitPrefix": "T.",
+    "retrograde": "(逆行中)",
+    "orb": "オーブ: ",
+    "housePrefix": "第",
+    "houseSuffix": "ハウス"
+  },
+  "signs": {
+    "Ari": "牡羊座",
+    "Tau": "牡牛座",
+    "Gem": "双子座",
+    "Can": "蟹座",
+    "Leo": "獅子座",
+    "Vir": "乙女座",
+    "Lib": "天秤座",
+    "Sco": "蠍座",
+    "Sag": "射手座",
+    "Cap": "山羊座",
+    "Aqu": "水瓶座",
+    "Pis": "魚座"
+  },
+  "houseSystems": {
+    "P": "プラシダス（Placidus）",
+    "W": "ホールサイン（Whole Sign）",
+    "A": "等分ハウス（Equal House）"
+  },
+  "pdf": {
+    "reportTitle": "ネイタルチャートレポート"
+  }
+}

@@ -1,0 +1,195 @@
+{
+  "app": {
+    "title": "Liber Caeli",
+    "subtitle": "Book of the Heavens",
+    "settings": "Settings",
+    "connectingSidecar": "Connecting to sidecar...",
+    "sidecarHint": "Start manually: cd sidecar && uvicorn main:app --port 8765",
+    "noChartMessage": "Enter birth data and create a chart to begin",
+    "chartError": "Failed to generate chart."
+  },
+  "tabs": {
+    "natal": "Natal",
+    "transit": "Transit",
+    "synastry": "Synastry",
+    "calendar": "Calendar"
+  },
+  "form": {
+    "title": "Birth Data",
+    "name": "Name",
+    "namePlaceholder": "e.g., John",
+    "birthDate": "Date of Birth",
+    "year": "Year",
+    "month": "Month",
+    "day": "Day",
+    "birthTime": "Time of Birth",
+    "hour": "Hour",
+    "minute": "Min",
+    "birthPlace": "Place of Birth",
+    "selectFromList": "Select from list",
+    "searchByName": "Search by name",
+    "selectCity": "Select a city...",
+    "searchPlaceholder": "Enter city name (e.g., Tokyo, London)",
+    "searching": "Searching...",
+    "search": "Search",
+    "noResults": "No matching cities found",
+    "builtinDict": "Built-in",
+    "selected": "Selected: ",
+    "manualCoordsHint": "If your city is not listed, enter latitude/longitude manually",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "timezone": "Timezone",
+    "tzJapan": "Asia/Tokyo (Japan)",
+    "createChart": "Create Chart"
+  },
+  "profile": {
+    "saved": "Saved Profiles",
+    "count": "",
+    "selectPlaceholder": "Select a profile...",
+    "saving": "Saving...",
+    "save": "Save",
+    "delete": "Delete",
+    "saveTooltip": "Save current birth data as a profile",
+    "deleteTooltip": "Delete selected profile"
+  },
+  "common": {
+    "calculate": "Calculate",
+    "calculating": "Calculating...",
+    "copy": "Copy",
+    "copied": "Copied",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "aiPrompt": "AI Prompt",
+    "aiInterpretation": "AI Interpretation",
+    "generatePrompt": "Generate Prompt",
+    "generateInterpretation": "Generate Interpretation",
+    "noApiKeyMessage": "No API key set. Running in prompt generation mode. Copy the generated text and paste it into your preferred AI.",
+    "noChartFirst": "Enter birth data and create a chart first.",
+    "promptError": "Failed to generate prompt."
+  },
+  "interpretation": {
+    "promptHelp": "Click \"Generate Prompt\" to create text for your AI.",
+    "aiHelp": "Click \"Generate Interpretation\" for Claude AI analysis.",
+    "apiKeyHint": "Register an API key in Settings to enable AI interpretation."
+  },
+  "transit": {
+    "title": "Transit",
+    "dateLabel": "Transit Date",
+    "error": "Transit calculation failed.",
+    "promptHelp": "Select a date, click \"Calculate\", then \"Generate Prompt\" to create text for your AI.",
+    "aiHelp": "Select a date and click \"Calculate\" to display the transit chart."
+  },
+  "synastry": {
+    "title": "Synastry (Compatibility)",
+    "person1": "Person 1 (Natal Chart)",
+    "person1Placeholder": "Enter birth data first",
+    "person2": "Person 2 (Select from profiles)",
+    "selectPlaceholder": "Select a profile...",
+    "noProfiles": "No profiles available. Save birth data in the left panel.",
+    "calculateSynastry": "Calculate Synastry",
+    "error": "Synastry calculation failed.",
+    "promptHelp": "Select person 2, click \"Calculate Synastry\", then \"Generate Prompt\" to create text for your AI.",
+    "aiHelp": "Select person 2 and click \"Calculate Synastry\" to display the compatibility chart."
+  },
+  "calendar": {
+    "title": "Monthly Calendar",
+    "error": "Calendar calculation failed.",
+    "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "monthEvents": "Events for {{month}}/{{day}}",
+    "noEvents": "No events on this day",
+    "monthlyFocus": "Monthly Focus",
+    "generateFocus": "Generate Monthly Focus",
+    "yearMonth": "{{month}}/{{year}}",
+    "promptHelp": "Click \"Generate Prompt\" to create text for your AI.",
+    "aiHelp": "Click \"Generate Monthly Focus\" for a monthly forecast.",
+    "calcHelp": "Click \"Calculate\" to display the monthly transit calendar."
+  },
+  "export": {
+    "label": "Export:",
+    "svgDone": "SVG exported",
+    "pngDone": "PNG exported",
+    "pdfDone": "PDF exported"
+  },
+  "settings": {
+    "title": "Settings",
+    "apiKey": "API Key",
+    "apiKeySet": "API key is configured.",
+    "apiKeyOverwrite": "Overwrite with new key...",
+    "apiKeyPlaceholder": "sk-ant-api03-...",
+    "houseSystem": "House System",
+    "houseSystemHint": "Changes take effect on the next chart generation.",
+    "language": "Language",
+    "deleteKey": "Delete Key",
+    "saveError": "Failed to save.",
+    "deleteError": "Failed to delete."
+  },
+  "glossary": {
+    "planet": "Planet",
+    "sign": "Sign",
+    "house": "House",
+    "aspect": "Aspect"
+  },
+  "planetTable": {
+    "planet": "Planet",
+    "sign": "Sign",
+    "degree": "Degree",
+    "house": "House",
+    "retrograde": "Rx"
+  },
+  "planets": {
+    "Sun": "Sun",
+    "Moon": "Moon",
+    "Mercury": "Mercury",
+    "Venus": "Venus",
+    "Mars": "Mars",
+    "Jupiter": "Jupiter",
+    "Saturn": "Saturn",
+    "Uranus": "Uranus",
+    "Neptune": "Neptune",
+    "Pluto": "Pluto",
+    "Chiron": "Chiron",
+    "Mean_Lilith": "Lilith",
+    "Pars_Fortunae": "Fortuna",
+    "ASC": "ASC",
+    "MC": "MC"
+  },
+  "aspects": {
+    "conjunction": "Conjunction (0°)",
+    "opposition": "Opposition (180°)",
+    "trine": "Trine (120°)",
+    "sextile": "Sextile (60°)",
+    "square": "Square (90°)",
+    "semi_square": "Semi-square (45°)",
+    "quincunx": "Quincunx (150°)"
+  },
+  "chart": {
+    "transitPrefix": "T.",
+    "retrograde": "(Rx)",
+    "orb": "Orb: ",
+    "housePrefix": "",
+    "houseSuffix": "H"
+  },
+  "signs": {
+    "Ari": "Aries",
+    "Tau": "Taurus",
+    "Gem": "Gemini",
+    "Can": "Cancer",
+    "Leo": "Leo",
+    "Vir": "Virgo",
+    "Lib": "Libra",
+    "Sco": "Scorpio",
+    "Sag": "Sagittarius",
+    "Cap": "Capricorn",
+    "Aqu": "Aquarius",
+    "Pis": "Pisces"
+  },
+  "houseSystems": {
+    "P": "Placidus",
+    "W": "Whole Sign",
+    "A": "Equal House"
+  },
+  "pdf": {
+    "reportTitle": "Natal Chart Report"
+  }
+}

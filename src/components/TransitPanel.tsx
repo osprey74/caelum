@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import Markdown from "react-markdown";
 import { fetchTransit, streamTransitInterpretation, generateTransitPrompt, BirthData } from "../lib/api";
 import type { DualChartResponse, TransitRequest } from "../types/astrology";
@@ -45,6 +46,7 @@ function todayStr(): string {
 }
 
 export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTextChange, onTransitDateChange }: Props) {
+  const { t } = useTranslation();
   const [transitDate, setTransitDate] = useState(todayStr());
   const [loading, setLoading] = useState(false);
   const [interpText, setInterpText] = useState("");
@@ -94,7 +96,7 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
       const data = await fetchTransit(req);
       onTransitData(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "トランジット計算に失敗しました。");
+      setError(e instanceof Error ? e.message : t("transit.error"));
       onTransitData(null);
     } finally {
       setLoading(false);
@@ -121,7 +123,7 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
       generateTransitPrompt(req)
         .then((prompt) => setInterpText(prompt))
         .catch((e) =>
-          setError(e instanceof Error ? e.message : "プロンプト生成に失敗しました。"),
+          setError(e instanceof Error ? e.message : t("common.promptError")),
         )
         .finally(() => setInterpLoading(false));
     }
@@ -170,12 +172,12 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
 
   return (
     <div className="flex flex-col h-full">
-      <h2 className="text-lg font-bold text-gray-200 mb-3">トランジット</h2>
+      <h2 className="text-lg font-bold text-gray-200 mb-3">{t("transit.title")}</h2>
 
       {/* 日付ピッカー + 計算ボタン */}
       <div className="flex gap-2 mb-3 items-end">
         <div className="flex-1">
-          <label className="block text-xs text-gray-400 mb-1">トランジット日付</label>
+          <label className="block text-xs text-gray-400 mb-1">{t("transit.dateLabel")}</label>
           <input
             type="date"
             lang="en"
@@ -191,7 +193,7 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
           disabled={!birthData || loading}
           className={`${btnClass} bg-indigo-600 hover:bg-indigo-500`}
         >
-          {loading ? "計算中..." : "計算"}
+          {loading ? t("common.calculating") : t("common.calculate")}
         </button>
       </div>
 
@@ -203,24 +205,24 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
 
       {/* トランジット解釈 */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-gray-400">{isPromptMode ? "AI プロンプト" : "AI 解釈"}</span>
+        <span className="text-sm text-gray-400">{isPromptMode ? t("common.aiPrompt") : t("common.aiInterpretation")}</span>
         <div className="flex gap-2">
           {interpText && !interpLoading && (
             <button type="button" onClick={handleCopy}
               className="rounded bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600 transition-colors">
-              {copied ? "コピー済み" : "コピー"}
+              {copied ? t("common.copied") : t("common.copy")}
             </button>
           )}
           {interpLoading && hasApiKey ? (
             <button type="button" onClick={handleCancel}
               className={`${btnClass} bg-red-700 hover:bg-red-600`}>
-              中止
+              {t("common.cancel")}
             </button>
           ) : (
             <button type="button" onClick={handleInterpret}
               disabled={!birthData || interpLoading}
               className={`${btnClass} bg-indigo-600 hover:bg-indigo-500`}>
-              {isPromptMode ? "プロンプトを生成" : "解釈を生成"}
+              {isPromptMode ? t("common.generatePrompt") : t("common.generateInterpretation")}
             </button>
           )}
         </div>
@@ -228,7 +230,7 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
 
       {isPromptMode && !interpText && !interpLoading && (
         <div className="mb-2 rounded bg-amber-900/30 border border-amber-700 px-3 py-2 text-xs text-amber-300">
-          APIキー未設定のため、プロンプト生成モードです。生成されたテキストをお使いのAIにコピー＆ペーストしてください。
+          {t("common.noApiKeyMessage")}
         </div>
       )}
 
@@ -272,9 +274,9 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
           <p className="text-gray-500">
             {birthData
               ? isPromptMode
-                ? "日付を選択し「計算」後、「プロンプトを生成」ボタンを押すとAIに渡すテキストが生成されます。"
-                : "日付を選択し「計算」ボタンを押すと、トランジットチャートが表示されます。"
-              : "まず出生データを入力してチャートを作成してください。"}
+                ? t("transit.promptHelp")
+                : t("transit.aiHelp")
+              : t("common.noChartFirst")}
           </p>
         )}
       </div>

@@ -34,12 +34,16 @@ def _search_local(query: str) -> list[dict]:
 
 
 @router.get("/geocode")
-async def geocode(q: str = Query(..., min_length=1, description="検索クエリ")):
+async def geocode(
+    q: str = Query(..., min_length=1, description="検索クエリ"),
+    lang: str = Query("ja", description="言語 (ja/en)"),
+):
     """都市名でジオコーディング検索。ローカル辞書 + Nominatim API。"""
     # ローカル辞書を先に検索
     local_results = _search_local(q)
 
     # Nominatim API 検索
+    accept_lang = "en,ja" if lang == "en" else "ja,en"
     nominatim_results: list[dict] = []
     try:
         async with httpx.AsyncClient() as client:
@@ -50,7 +54,7 @@ async def geocode(q: str = Query(..., min_length=1, description="検索クエリ
                     "format": "json",
                     "limit": 5,
                     "addressdetails": 1,
-                    "accept-language": "ja,en",
+                    "accept-language": accept_lang,
                 },
                 headers={"User-Agent": _USER_AGENT},
                 timeout=10.0,

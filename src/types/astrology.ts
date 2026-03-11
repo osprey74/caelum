@@ -84,6 +84,7 @@ export interface TransitRequest {
   lng?: number;
   timezone?: string;
   house_system?: string;
+  lang?: string;
   transit_year: number;
   transit_month: number;
   transit_day: number;
@@ -113,6 +114,7 @@ export interface SynastryRequest {
   lng2?: number;
   timezone2?: string;
   house_system?: string;
+  lang?: string;
 }
 
 export interface Profile {
@@ -187,6 +189,7 @@ export interface MonthlyCalendarRequest {
   lng?: number;
   timezone?: string;
   house_system?: string;
+  lang?: string;
   calendar_year: number;
   calendar_month: number;
 }

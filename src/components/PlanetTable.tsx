@@ -2,19 +2,11 @@ import {
   ChartResponse,
   PLANET_KEYS,
   OPTIONAL_PLANET_KEYS,
-  SIGN_NAMES,
   PLANET_SYMBOLS,
   PlanetData,
 } from "../types/astrology";
+import { useTranslation } from "react-i18next";
 import type { GlossaryClickEvent } from "./ChartWheel";
-
-const PLANET_NAMES_JA: Record<string, string> = {
-  Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
-  Mars: "火星", Jupiter: "木星", Saturn: "土星", Uranus: "天王星",
-  Neptune: "海王星", Pluto: "冥王星",
-  Chiron: "キロン", Mean_Lilith: "リリス", Pars_Fortunae: "フォルテュナ",
-  Ascendant: "ASC", Medium_Coeli: "MC",
-};
 
 interface Props {
   data: ChartResponse;
@@ -33,6 +25,7 @@ function houseLabel(house: string | null): string {
 }
 
 export default function PlanetTable({ data, onGlossaryClick }: Props) {
+  const { t } = useTranslation();
   const subject = data.subject;
   const planets: PlanetData[] = PLANET_KEYS.map((k) => subject[k] as PlanetData);
   for (const k of OPTIONAL_PLANET_KEYS) {
@@ -47,11 +40,11 @@ export default function PlanetTable({ data, onGlossaryClick }: Props) {
       <table className="w-full text-sm text-gray-200">
         <thead>
           <tr className="border-b border-gray-700 text-gray-400">
-            <th className="text-left py-1.5 px-2">天体</th>
-            <th className="text-left py-1.5 px-2">サイン</th>
-            <th className="text-right py-1.5 px-2">度数</th>
-            <th className="text-left py-1.5 px-2">ハウス</th>
-            <th className="text-center py-1.5 px-2">逆行</th>
+            <th className="text-left py-1.5 px-2">{t("planetTable.planet")}</th>
+            <th className="text-left py-1.5 px-2">{t("planetTable.sign")}</th>
+            <th className="text-right py-1.5 px-2">{t("planetTable.degree")}</th>
+            <th className="text-left py-1.5 px-2">{t("planetTable.house")}</th>
+            <th className="text-center py-1.5 px-2">{t("planetTable.retrograde")}</th>
           </tr>
         </thead>
         <tbody>
@@ -63,7 +56,7 @@ export default function PlanetTable({ data, onGlossaryClick }: Props) {
                   onClick={onGlossaryClick ? () => onGlossaryClick({ category: "planet", key: p.name }) : undefined}
                 >
                   <span className="mr-1.5">{PLANET_SYMBOLS[p.name] || ""}</span>
-                  {PLANET_NAMES_JA[p.name] || p.name}
+                  {t("planets." + p.name, p.name)}
                 </span>
               </td>
               <td className="py-1.5 px-2">
@@ -71,7 +64,7 @@ export default function PlanetTable({ data, onGlossaryClick }: Props) {
                   className={onGlossaryClick ? "cursor-pointer hover:text-amber-300 transition-colors" : ""}
                   onClick={onGlossaryClick ? () => onGlossaryClick({ category: "sign", key: p.sign }) : undefined}
                 >
-                  {SIGN_NAMES[p.sign] || p.sign}
+                  {t("signs." + p.sign, p.sign)}
                 </span>
               </td>
               <td className="py-1.5 px-2 text-right font-mono">{formatDeg(p.position)}</td>

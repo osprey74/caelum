@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useSidecarReady } from "./hooks/useChart";
 import { fetchChart, fetchApiKeyStatus, fetchHouseSystem, BirthData } from "./lib/api";
 import BirthDataForm from "./components/BirthDataForm";
@@ -18,6 +19,7 @@ import { ChartResponse, DualChartResponse } from "./types/astrology";
 type RightTab = "interpretation" | "transit" | "synastry" | "calendar";
 
 function App() {
+  const { t, i18n } = useTranslation();
   const ready = useSidecarReady();
   const [chartData, setChartData] = useState<ChartResponse | null>(null);
   const [birthData, setBirthData] = useState<BirthData | null>(null);
@@ -71,15 +73,15 @@ function App() {
     const name = chartData?.subject.name || "chart";
     if (rightTab === "transit" && transitDate) {
       const datePart = transitDate.replace(/-/g, "");
-      return `${name}_トランジット${datePart}_${todayStamp}`;
+      return `${name}_${t("tabs.transit")}${datePart}_${todayStamp}`;
     }
     if (rightTab === "synastry" && person2Name) {
-      return `${name}_シナストリー-${person2Name}_${todayStamp}`;
+      return `${name}_${t("tabs.synastry")}-${person2Name}_${todayStamp}`;
     }
     if (rightTab === "calendar") {
-      return `${name}_月間カレンダー_${todayStamp}`;
+      return `${name}_${t("tabs.calendar")}_${todayStamp}`;
     }
-    return `${name}_ネイタル解釈_${todayStamp}`;
+    return `${name}_${t("tabs.natal")}_${todayStamp}`;
   })();
 
   useEffect(() => {
@@ -89,17 +91,24 @@ function App() {
     }
   }, [ready]);
 
+  // Update lang in birthData when language changes
+  useEffect(() => {
+    if (birthData) {
+      setBirthData((prev) => prev ? { ...prev, lang: i18n.language } : prev);
+    }
+  }, [i18n.language]);
+
   async function handleSubmit(data: BirthData) {
     setLoading(true);
     setError(null);
-    const dataWithHs = { ...data, house_system: houseSystem };
+    const dataWithHs = { ...data, house_system: houseSystem, lang: i18n.language };
     setBirthData(dataWithHs);
     setTransitData(null);
     try {
       const result = await fetchChart(dataWithHs);
       setChartData(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "チャートの生成に失敗しました。");
+      setError(e instanceof Error ? e.message : t("app.chartError"));
     } finally {
       setLoading(false);
     }
@@ -110,9 +119,9 @@ function App() {
       <div className="flex items-center justify-center h-screen bg-gray-950 text-gray-400">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p>サイドカーに接続中...</p>
+          <p>{t("app.connectingSidecar")}</p>
           <p className="text-xs mt-1 text-gray-600">
-            サイドカーを手動起動: cd sidecar && uvicorn main:app --port 8765
+            {t("app.sidecarHint")}
           </p>
         </div>
       </div>
@@ -132,18 +141,18 @@ function App() {
       <header className="border-b border-gray-800 px-6 py-3 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-wide">
           Liber Caeli
-          <span className="text-sm font-normal text-gray-500 ml-2">天空の書</span>
+          <span className="text-sm font-normal text-gray-500 ml-2">{t("app.subtitle")}</span>
         </h1>
         <button
           type="button"
           onClick={() => setShowSettings(true)}
           className="flex items-center gap-1.5 rounded bg-gray-800 px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
-          title="設定"
+          title={t("app.settings")}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
             <path fillRule="evenodd" d="M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.331 1.652a6.993 6.993 0 0 1 1.929 1.115l1.598-.54a1 1 0 0 1 1.186.447l1.18 2.044a1 1 0 0 1-.205 1.251l-1.267 1.113a7.047 7.047 0 0 1 0 2.228l1.267 1.113a1 1 0 0 1 .206 1.25l-1.18 2.045a1 1 0 0 1-1.187.447l-1.598-.54a6.993 6.993 0 0 1-1.929 1.115l-.33 1.652a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.331-1.652a6.993 6.993 0 0 1-1.929-1.115l-1.598.54a1 1 0 0 1-1.186-.447l-1.18-2.044a1 1 0 0 1 .205-1.251l1.267-1.114a7.05 7.05 0 0 1 0-2.227L1.821 7.773a1 1 0 0 1-.206-1.25l1.18-2.045a1 1 0 0 1 1.187-.447l1.598.54A6.993 6.993 0 0 1 7.51 3.456l.33-1.652ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
           </svg>
-          設定
+          {t("app.settings")}
         </button>
       </header>
 
@@ -191,7 +200,7 @@ function App() {
 
           {!chartData && !loading && (
             <div className="flex items-center justify-center py-20 text-gray-600">
-              出生データを入力してチャートを作成してください
+              {t("app.noChartMessage")}
             </div>
           )}
         </main>
@@ -201,19 +210,19 @@ function App() {
           <div className="flex gap-1 px-4 pt-3 border-b border-gray-800">
             <button type="button" onClick={() => setRightTab("interpretation")}
               className={tabBtnClass(rightTab === "interpretation")}>
-              ネイタル解釈
+              {t("tabs.natal")}
             </button>
             <button type="button" onClick={() => setRightTab("transit")}
               className={tabBtnClass(rightTab === "transit")}>
-              トランジット
+              {t("tabs.transit")}
             </button>
             <button type="button" onClick={() => setRightTab("synastry")}
               className={tabBtnClass(rightTab === "synastry")}>
-              シナストリー
+              {t("tabs.synastry")}
             </button>
             <button type="button" onClick={() => setRightTab("calendar")}
               className={tabBtnClass(rightTab === "calendar")}>
-              月間カレンダー
+              {t("tabs.calendar")}
             </button>
           </div>
           <div className="flex-1 p-4 overflow-hidden">

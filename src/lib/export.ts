@@ -81,6 +81,7 @@ export async function exportPdf(
   subjectName: string,
   interpretationText: string,
   filename = "chart-report.pdf",
+  reportTitle = "ネイタルチャートレポート",
 ) {
   const canvas = await svgToCanvas(svgEl, 2);
   const chartDataUrl = canvas.toDataURL("image/png");
@@ -98,7 +99,7 @@ export async function exportPdf(
   pdf.text("Liber Caeli", margin, 20);
   pdf.setFontSize(12);
   pdf.setTextColor(100, 100, 100);
-  pdf.text(`ネイタルチャートレポート — ${subjectName}`, margin, 28);
+  pdf.text(`${reportTitle} — ${subjectName}`, margin, 28);
 
   // チャート画像（中央配置）
   const chartSize = Math.min(contentWidth, 140);

@@ -14,6 +14,7 @@ class BirthData(BaseModel):
     lng: float | None = None
     timezone: str | None = None
     house_system: str = "P"  # P=Placidus, W=Whole Sign, A=Equal
+    lang: str = "ja"  # ja or en
 
 
 class TransitRequest(BaseModel):
@@ -36,6 +37,7 @@ class TransitRequest(BaseModel):
     transit_day: int
     transit_hour: int = 12
     transit_minute: int = 0
+    lang: str = "ja"
 
 
 class SynastryRequest(BaseModel):
@@ -63,6 +65,7 @@ class SynastryRequest(BaseModel):
     lng2: float | None = None
     timezone2: str | None = None
     house_system: str = "P"  # P=Placidus, W=Whole Sign, A=Equal
+    lang: str = "ja"
 
 
 class ProfileCreate(BaseModel):
@@ -93,6 +96,7 @@ class MonthlyCalendarRequest(BaseModel):
     lng: float | None = None
     timezone: str | None = None
     house_system: str = "P"
+    lang: str = "ja"
     # カレンダー対象月
     calendar_year: int
     calendar_month: int  # 1-12

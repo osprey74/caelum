@@ -1,16 +1,11 @@
 import type { GlossaryEntry } from "../data/glossary";
+import { useTranslation } from "react-i18next";
+import i18n from "i18next";
 
 interface Props {
   entry: GlossaryEntry;
   onClose: () => void;
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  planet: "天体",
-  sign: "サイン",
-  house: "ハウス",
-  aspect: "アスペクト",
-};
 
 const CATEGORY_COLORS: Record<string, string> = {
   planet: "text-indigo-400",
@@ -27,6 +22,19 @@ const CATEGORY_BORDER: Record<string, string> = {
 };
 
 export default function GlossaryModal({ entry, onClose }: Props) {
+  const { t } = useTranslation();
+  const isEn = i18n.language === "en";
+  const displayName = isEn && entry.nameEn ? entry.nameEn : entry.name;
+  const displaySummary = isEn && entry.summaryEn ? entry.summaryEn : entry.summary;
+  const displayDescription = isEn && entry.descriptionEn ? entry.descriptionEn : entry.description;
+
+  const CATEGORY_LABELS: Record<string, string> = {
+    planet: t("glossary.planet"),
+    sign: t("glossary.sign"),
+    house: t("glossary.house"),
+    aspect: t("glossary.aspect"),
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
@@ -41,7 +49,7 @@ export default function GlossaryModal({ entry, onClose }: Props) {
           <div className="flex items-center gap-3">
             <span className="text-3xl">{entry.symbol}</span>
             <div>
-              <h3 className="text-lg font-bold text-gray-100">{entry.name}</h3>
+              <h3 className="text-lg font-bold text-gray-100">{displayName}</h3>
               <span className={`text-xs font-medium ${CATEGORY_COLORS[entry.category]}`}>
                 {CATEGORY_LABELS[entry.category]}
               </span>
@@ -58,12 +66,12 @@ export default function GlossaryModal({ entry, onClose }: Props) {
 
         {/* Summary */}
         <div className="mb-3 rounded bg-gray-800/60 px-3 py-2 text-sm text-gray-300">
-          {entry.summary}
+          {displaySummary}
         </div>
 
         {/* Description */}
         <p className="text-sm text-gray-200 leading-relaxed">
-          {entry.description}
+          {displayDescription}
         </p>
 
         {/* Close button */}
@@ -73,7 +81,7 @@ export default function GlossaryModal({ entry, onClose }: Props) {
             onClick={onClose}
             className="rounded bg-gray-700 px-4 py-1.5 text-sm text-gray-300 hover:bg-gray-600 transition-colors"
           >
-            閉じる
+            {t("common.close")}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { exportSvg, exportPng, exportPdf } from "../lib/export";
 import type { ChartWheelHandle } from "./ChartWheel";
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function ExportButtons({ chartRef, subjectName, fileBaseName, interpretationText }: Props) {
+  const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -27,7 +29,7 @@ export default function ExportButtons({ chartRef, subjectName, fileBaseName, int
     const svg = getSvg();
     if (!svg) return;
     exportSvg(svg, `${fileBaseName}.svg`);
-    setToast("SVGをエクスポートしました");
+    setToast(t("export.svgDone"));
   }
 
   async function handlePng() {
@@ -36,7 +38,7 @@ export default function ExportButtons({ chartRef, subjectName, fileBaseName, int
     setExporting(true);
     try {
       await exportPng(svg, `${fileBaseName}.png`);
-      setToast("PNGをエクスポートしました");
+      setToast(t("export.pngDone"));
     } finally {
       setExporting(false);
     }
@@ -47,8 +49,8 @@ export default function ExportButtons({ chartRef, subjectName, fileBaseName, int
     if (!svg) return;
     setExporting(true);
     try {
-      await exportPdf(svg, subjectName, interpretationText, `${fileBaseName}.pdf`);
-      setToast("PDFをエクスポートしました");
+      await exportPdf(svg, subjectName, interpretationText, `${fileBaseName}.pdf`, t("pdf.reportTitle"));
+      setToast(t("export.pdfDone"));
     } finally {
       setExporting(false);
     }
@@ -59,7 +61,7 @@ export default function ExportButtons({ chartRef, subjectName, fileBaseName, int
 
   return (
     <div className="relative flex gap-2 items-center">
-      <span className="text-xs text-gray-500">エクスポート:</span>
+      <span className="text-xs text-gray-500">{t("export.label")}</span>
       <button type="button" onClick={handleSvg} disabled={exporting} className={btnClass}>
         SVG
       </button>

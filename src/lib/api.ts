@@ -12,6 +12,7 @@ export interface BirthData {
   lng?: number;
   timezone?: string;
   house_system?: string;
+  lang?: string;
 }
 
 export async function fetchChart(data: BirthData) {
@@ -128,13 +129,19 @@ export function streamSynastryInterpretation(
   return () => controller.abort();
 }
 
-export interface CityGroup {
-  label: string;
-  cities: string[];
+export interface CityOption {
+  key: string;
+  display: string;
 }
 
-export async function fetchCityGroups(): Promise<CityGroup[]> {
-  const res = await fetch(`${SIDECAR_URL}/cities`);
+export interface CityGroup {
+  label: string;
+  cities: CityOption[];
+}
+
+export async function fetchCityGroups(lang?: string): Promise<CityGroup[]> {
+  const params = lang ? `?lang=${lang}` : "";
+  const res = await fetch(`${SIDECAR_URL}/cities${params}`);
   const data = await res.json();
   return data.groups;
 }
@@ -149,8 +156,10 @@ export interface GeocodingResult {
   source: "local" | "nominatim";
 }
 
-export async function searchCity(query: string): Promise<GeocodingResult[]> {
-  const res = await fetch(`${SIDECAR_URL}/geocode?q=${encodeURIComponent(query)}`);
+export async function searchCity(query: string, lang?: string): Promise<GeocodingResult[]> {
+  const params = new URLSearchParams({ q: query });
+  if (lang) params.set("lang", lang);
+  const res = await fetch(`${SIDECAR_URL}/geocode?${params}`);
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   return data.results;

@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "i18next";
 import { saveApiKey, deleteApiKey, saveHouseSystem } from "../lib/api";
-import { HOUSE_SYSTEMS } from "../types/astrology";
+import { setLanguage } from "../i18n";
 
 interface Props {
   hasKey: boolean;
@@ -11,6 +13,7 @@ interface Props {
 }
 
 export default function ApiKeyDialog({ hasKey, houseSystem, onClose, onUpdate, onHouseSystemChange }: Props) {
+  const { t } = useTranslation();
   const [key, setKey] = useState("");
   const [selectedHs, setSelectedHs] = useState(houseSystem);
   const [saving, setSaving] = useState(false);
@@ -30,7 +33,7 @@ export default function ApiKeyDialog({ hasKey, houseSystem, onClose, onUpdate, o
       }
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "保存に失敗しました。");
+      setError(e instanceof Error ? e.message : t("settings.saveError"));
     } finally {
       setSaving(false);
     }
@@ -44,7 +47,7 @@ export default function ApiKeyDialog({ hasKey, houseSystem, onClose, onUpdate, o
       onUpdate(false);
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "削除に失敗しました。");
+      setError(e instanceof Error ? e.message : t("settings.deleteError"));
     } finally {
       setSaving(false);
     }
@@ -55,21 +58,21 @@ export default function ApiKeyDialog({ hasKey, houseSystem, onClose, onUpdate, o
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-[28rem] rounded-lg bg-gray-900 border border-gray-700 p-6 shadow-xl">
-        <h3 className="text-lg font-bold text-gray-100 mb-4">設定</h3>
+        <h3 className="text-lg font-bold text-gray-100 mb-4">{t("settings.title")}</h3>
 
         {/* APIキー */}
         <div className="mb-5">
-          <h4 className="text-sm font-semibold text-gray-300 mb-2">APIキー</h4>
+          <h4 className="text-sm font-semibold text-gray-300 mb-2">{t("settings.apiKey")}</h4>
           {hasKey && (
             <p className="mb-2 text-sm text-green-400">
-              APIキーは設定済みです。
+              {t("settings.apiKeySet")}
             </p>
           )}
           <input
             type="password"
             value={key}
             onChange={(e) => setKey(e.target.value)}
-            placeholder={hasKey ? "新しいキーで上書き..." : "sk-ant-api03-..."}
+            placeholder={hasKey ? t("settings.apiKeyOverwrite") : t("settings.apiKeyPlaceholder")}
             className="w-full rounded bg-gray-800 border border-gray-600 px-3 py-2 text-gray-100 text-sm focus:outline-none focus:border-indigo-500"
             disabled={saving}
           />
@@ -77,21 +80,36 @@ export default function ApiKeyDialog({ hasKey, houseSystem, onClose, onUpdate, o
 
         {/* ハウスシステム */}
         <div className="mb-5">
-          <h4 className="text-sm font-semibold text-gray-300 mb-2">ハウスシステム</h4>
+          <h4 className="text-sm font-semibold text-gray-300 mb-2">{t("settings.houseSystem")}</h4>
           <select
             value={selectedHs}
             onChange={(e) => setSelectedHs(e.target.value)}
             disabled={saving}
-            title="ハウスシステム"
+            title={t("settings.houseSystem")}
             className="w-full rounded bg-gray-800 border border-gray-600 px-3 py-2 text-gray-100 text-sm focus:outline-none focus:border-indigo-500"
           >
-            {Object.entries(HOUSE_SYSTEMS).map(([id, label]) => (
-              <option key={id} value={id}>{label}</option>
+            {["P", "W", "A"].map((id) => (
+              <option key={id} value={id}>{t(`houseSystems.${id}`)}</option>
             ))}
           </select>
           <p className="mt-1 text-xs text-gray-500">
-            変更後、次回のチャート生成から反映されます。
+            {t("settings.houseSystemHint")}
           </p>
+        </div>
+
+        {/* 言語 */}
+        <div className="mb-5">
+          <h4 className="text-sm font-semibold text-gray-300 mb-2">{t("settings.language")}</h4>
+          <select
+            value={i18n.language}
+            onChange={(e) => setLanguage(e.target.value)}
+            disabled={saving}
+            title={t("settings.language")}
+            className="w-full rounded bg-gray-800 border border-gray-600 px-3 py-2 text-gray-100 text-sm focus:outline-none focus:border-indigo-500"
+          >
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
         </div>
 
         {error && (
@@ -107,7 +125,7 @@ export default function ApiKeyDialog({ hasKey, houseSystem, onClose, onUpdate, o
                 disabled={saving}
                 className="rounded bg-red-800 px-3 py-1.5 text-sm text-white hover:bg-red-700 disabled:opacity-40 transition-colors"
               >
-                キーを削除
+                {t("settings.deleteKey")}
               </button>
             )}
           </div>
@@ -118,7 +136,7 @@ export default function ApiKeyDialog({ hasKey, houseSystem, onClose, onUpdate, o
               disabled={saving}
               className="rounded bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600 transition-colors"
             >
-              キャンセル
+              {t("common.close")}
             </button>
             <button
               type="button"
@@ -126,7 +144,7 @@ export default function ApiKeyDialog({ hasKey, houseSystem, onClose, onUpdate, o
               disabled={saving || !hasChanges}
               className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-500 disabled:opacity-40 transition-colors"
             >
-              保存
+              {t("common.save")}
             </button>
           </div>
         </div>

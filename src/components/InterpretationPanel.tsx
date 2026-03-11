@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import Markdown from "react-markdown";
+import { useTranslation } from "react-i18next";
 import { streamInterpretation, generatePrompt, BirthData } from "../lib/api";
 
 interface Section {
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export default function InterpretationPanel({ birthData, hasApiKey, onTextChange }: Props) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export default function InterpretationPanel({ birthData, hasApiKey, onTextChange
       generatePrompt(birthData)
         .then((prompt) => setText(prompt))
         .catch((e) =>
-          setError(e instanceof Error ? e.message : "プロンプト生成に失敗しました。"),
+          setError(e instanceof Error ? e.message : t("common.promptError")),
         )
         .finally(() => setLoading(false));
     }
@@ -115,8 +117,8 @@ export default function InterpretationPanel({ birthData, hasApiKey, onTextChange
   }, [loading]);
 
   const isPromptMode = !hasApiKey;
-  const buttonLabel = isPromptMode ? "プロンプトを生成" : "解釈を生成";
-  const panelTitle = isPromptMode ? "AI プロンプト" : "AI 解釈";
+  const buttonLabel = isPromptMode ? t("common.generatePrompt") : t("common.generateInterpretation");
+  const panelTitle = isPromptMode ? t("common.aiPrompt") : t("common.aiInterpretation");
 
   const mdComponents = {
     h1: ({ children }: { children?: React.ReactNode }) => <h1 className="text-xl font-bold text-gray-100 mt-4 mb-2">{children}</h1>,
@@ -139,7 +141,7 @@ export default function InterpretationPanel({ birthData, hasApiKey, onTextChange
               onClick={handleCopy}
               className="rounded bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600 transition-colors"
             >
-              {copied ? "コピー済み" : "コピー"}
+              {copied ? t("common.copied") : t("common.copy")}
             </button>
           )}
           {loading && hasApiKey ? (
@@ -148,7 +150,7 @@ export default function InterpretationPanel({ birthData, hasApiKey, onTextChange
               onClick={handleCancel}
               className="rounded bg-red-700 px-3 py-1.5 text-sm text-white hover:bg-red-600 transition-colors"
             >
-              中止
+              {t("common.cancel")}
             </button>
           ) : (
             <button
@@ -165,8 +167,8 @@ export default function InterpretationPanel({ birthData, hasApiKey, onTextChange
 
       {isPromptMode && !text && !loading && (
         <div className="mb-2 rounded bg-amber-900/30 border border-amber-700 px-3 py-2 text-xs text-amber-300">
-          APIキー未設定のため、プロンプト生成モードです。生成されたテキストをお使いのAIにコピー＆ペーストしてください。
-          ヘッダーの設定ボタンからAPIキーを登録するとAI自動解釈が利用できます。
+          {t("common.noApiKeyMessage")}
+          {t("interpretation.apiKeyHint")}
         </div>
       )}
 
@@ -225,9 +227,9 @@ export default function InterpretationPanel({ birthData, hasApiKey, onTextChange
           <p className="text-gray-500">
             {birthData
               ? isPromptMode
-                ? "「プロンプトを生成」ボタンを押すと、AIに渡すテキストが生成されます。"
-                : "「解釈を生成」ボタンを押すと、Claude AIによる解釈が表示されます。"
-              : "まず出生データを入力してチャートを作成してください。"}
+                ? t("interpretation.promptHelp")
+                : t("interpretation.aiHelp")
+              : t("common.noChartFirst")}
           </p>
         )}
       </div>

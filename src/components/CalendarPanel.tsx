@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import Markdown from "react-markdown";
 import { fetchMonthlyCalendar, streamMonthlyInterpretation, generateMonthlyPrompt, BirthData } from "../lib/api";
 import type { MonthlyCalendarRequest, MonthlyCalendarResponse, CalendarEvent } from "../types/astrology";
@@ -55,14 +56,14 @@ const EVENT_COLORS: Record<string, string> = {
   natal_aspect: "bg-pink-900/60 text-pink-200",
 };
 
-const WEEKDAY_LABELS = ["月", "火", "水", "木", "金", "土", "日"];
-
 function currentYearMonth(): { year: number; month: number } {
   const d = new Date();
   return { year: d.getFullYear(), month: d.getMonth() + 1 };
 }
 
 export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Props) {
+  const { t } = useTranslation();
+  const WEEKDAY_LABELS = t("calendar.weekdays", { returnObjects: true }) as string[];
   const { year: initYear, month: initMonth } = currentYearMonth();
   const [calYear, setCalYear] = useState(initYear);
   const [calMonth, setCalMonth] = useState(initMonth);
@@ -109,7 +110,7 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
       const data = await fetchMonthlyCalendar(req);
       setCalData(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "カレンダー計算に失敗しました。");
+      setError(e instanceof Error ? e.message : t("calendar.error"));
     } finally {
       setLoading(false);
     }
@@ -135,7 +136,7 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
       generateMonthlyPrompt(req)
         .then((prompt) => setInterpText(prompt))
         .catch((e) =>
-          setError(e instanceof Error ? e.message : "プロンプト生成に失敗しました。"),
+          setError(e instanceof Error ? e.message : t("common.promptError")),
         )
         .finally(() => setInterpLoading(false));
     }
@@ -201,7 +202,7 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
 
   return (
     <div className="flex flex-col h-full">
-      <h2 className="text-lg font-bold text-gray-200 mb-3">月間カレンダー</h2>
+      <h2 className="text-lg font-bold text-gray-200 mb-3">{t("calendar.title")}</h2>
 
       {/* 月ナビゲーション + 計算ボタン */}
       <div className="flex gap-2 mb-3 items-center">
@@ -210,7 +211,7 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
           &lt;
         </button>
         <span className="flex-1 text-center font-medium text-gray-200">
-          {calYear}年{calMonth}月
+          {t("calendar.yearMonth", { year: calYear, month: calMonth })}
         </span>
         <button type="button" onClick={nextMonth}
           className="rounded bg-gray-800 px-2 py-1.5 text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors">
@@ -219,7 +220,7 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
         <button type="button" onClick={handleCalculate}
           disabled={!birthData || loading}
           className={`${btnClass} bg-indigo-600 hover:bg-indigo-500`}>
-          {loading ? "計算中..." : "計算"}
+          {loading ? t("common.calculating") : t("common.calculate")}
         </button>
       </div>
 
@@ -286,7 +287,7 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
       {selectedDay !== null && (
         <div className="mb-3 rounded bg-gray-800/50 border border-gray-700 p-2">
           <div className="text-xs font-medium text-gray-400 mb-1.5">
-            {calMonth}月{selectedDay}日のイベント
+            {t("calendar.monthEvents", { month: calMonth, day: selectedDay })}
           </div>
           {selectedDayEvents.length > 0 ? (
             <div className="space-y-1">
@@ -298,31 +299,31 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
               ))}
             </div>
           ) : (
-            <div className="text-xs text-gray-500">この日にイベントはありません</div>
+            <div className="text-xs text-gray-500">{t("calendar.noEvents")}</div>
           )}
         </div>
       )}
 
       {/* 月間AI解釈 */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-gray-400">{isPromptMode ? "AI プロンプト" : "月間フォーカス"}</span>
+        <span className="text-sm text-gray-400">{isPromptMode ? t("common.aiPrompt") : t("calendar.monthlyFocus")}</span>
         <div className="flex gap-2">
           {interpText && !interpLoading && (
             <button type="button" onClick={handleCopy}
               className="rounded bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600 transition-colors">
-              {copied ? "コピー済み" : "コピー"}
+              {copied ? t("common.copied") : t("common.copy")}
             </button>
           )}
           {interpLoading && hasApiKey ? (
             <button type="button" onClick={handleCancel}
               className={`${btnClass} bg-red-700 hover:bg-red-600`}>
-              中止
+              {t("common.cancel")}
             </button>
           ) : (
             <button type="button" onClick={handleInterpret}
               disabled={!birthData || !calData || interpLoading}
               className={`${btnClass} bg-indigo-600 hover:bg-indigo-500`}>
-              {isPromptMode ? "プロンプトを生成" : "月間フォーカスを生成"}
+              {isPromptMode ? t("common.generatePrompt") : t("calendar.generateFocus")}
             </button>
           )}
         </div>
@@ -330,7 +331,7 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
 
       {isPromptMode && !interpText && !interpLoading && calData && (
         <div className="mb-2 rounded bg-amber-900/30 border border-amber-700 px-3 py-2 text-xs text-amber-300">
-          APIキー未設定のため、プロンプト生成モードです。生成されたテキストをお使いのAIにコピー＆ペーストしてください。
+          {t("common.noApiKeyMessage")}
         </div>
       )}
 
@@ -374,11 +375,11 @@ export default function CalendarPanel({ birthData, hasApiKey, onTextChange }: Pr
           <p className="text-gray-500">
             {calData
               ? isPromptMode
-                ? "「プロンプトを生成」ボタンを押すとAIに渡すテキストが生成されます。"
-                : "「月間フォーカスを生成」ボタンを押すと、今月の運勢が表示されます。"
+                ? t("calendar.promptHelp")
+                : t("calendar.aiHelp")
               : birthData
-                ? "「計算」ボタンを押すと月間トランジットカレンダーが表示されます。"
-                : "まず出生データを入力してチャートを作成してください。"}
+                ? t("calendar.calcHelp")
+                : t("common.noChartFirst")}
           </p>
         )}
       </div>

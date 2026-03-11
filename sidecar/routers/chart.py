@@ -78,10 +78,11 @@ async def transit_calendar(data: MonthlyCalendarRequest):
         data.name, data.year, data.month, data.day, data.hour, data.minute,
         lat, lng, tz_str, data.house_system,
         data.calendar_year, data.calendar_month,
+        lang=data.lang,
     )
 
 
 @router.get("/cities")
-async def list_cities():
-    """都市辞書のキー一覧を返す。"""
-    return {"cities": get_city_names(), "groups": get_grouped_cities()}
+async def list_cities(lang: str = "ja"):
+    """都市辞書のキー一覧を返す。lang パラメータで表示名の言語を切り替え。"""
+    return {"cities": get_city_names(), "groups": get_grouped_cities(lang)}

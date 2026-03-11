@@ -1,281 +1,278 @@
-# Liber Caeli（リベル・カエリ）
+# Liber Caeli
 
-ラテン語で「天空の書」を意味する **Liber Caeli** は、西洋占星術のネイタルチャートを生成し、AIによる日本語解釈を提供するデスクトップアプリです。
+**Liber Caeli** — Latin for "Book of the Heavens" — is a desktop application that generates Western astrology natal charts and provides AI-powered interpretations.
 
-## 西洋占星術とは？
+[日本語版 README はこちら](README.ja.md)
 
-西洋占星術は、出生時の天体の配置（太陽・月・惑星など）が個人の性格や傾向に影響を与えるという考え方に基づく、ヨーロッパ発祥の伝統的な体系です。
+## What is Western Astrology?
 
-**ネイタルチャート（出生図）** とは、生まれた瞬間の空を「地図」にしたもので、以下の要素から成り立ちます：
+Western astrology is a traditional European system based on the idea that the positions of celestial bodies (Sun, Moon, planets, etc.) at the time of birth influence an individual's personality and tendencies.
 
-- **天体**（太陽・月・水星・金星・火星・木星・土星・天王星・海王星・冥王星・キロン・リリス・フォルテュナ）
-- **サイン**（おひつじ座〜うお座の12星座。太陽のサインが一般的に「星座占い」で言われる星座）
-- **ハウス**（人生の12分野：自己、財産、コミュニケーション、家庭など）
-- **アスペクト**（天体同士の角度関係。調和的な配置や緊張のある配置を示す）
+A **natal chart (birth chart)** is a "map" of the sky at the moment of birth, consisting of:
 
-本アプリはモダン西洋占星術（熱帯黄道）に基づいてチャートを計算します。ハウスシステムはプラシダス・ホールサイン・等分ハウスから選択できます。
+- **Planets** (Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto, Chiron, Lilith, Part of Fortune)
+- **Signs** (the 12 zodiac signs from Aries to Pisces)
+- **Houses** (12 areas of life: self, finances, communication, home, etc.)
+- **Aspects** (angular relationships between planets indicating harmonious or tense configurations)
 
-## 機能
+This app calculates charts based on modern Western astrology (tropical zodiac). House systems available: Placidus, Whole Sign, and Equal House.
 
-### チャート生成
-- 出生データ（名前・生年月日時・出生地）からネイタルチャートを生成
-- D3.js SVGによるチャート円盤表示（サインリング・ハウス線・天体シンボル・アスペクト線）
-- 天体配置一覧表（サイン / 度数 / ハウス / 逆行表示）
-- 13天体対応（10惑星 + キロン・リリス・フォルテュナ）
-- ハウスシステム選択（プラシダス / ホールサイン / 等分ハウス）
-- 日本全国＋海外主要都市の地方グループ付き都市選択・都市名検索
-- 緯度経度の直接入力による任意の場所でのチャート生成
+## Features
 
-### プロファイル管理
-- 出生データをプロファイルとして保存・呼び出し
-- プロファイルの追加・削除
+### Chart Generation
+- Generate natal charts from birth data (name, date/time of birth, birthplace)
+- D3.js SVG chart wheel display (sign ring, house lines, planet symbols, aspect lines)
+- Planet placement table (sign / degree / house / retrograde indicator)
+- 13 celestial bodies (10 planets + Chiron, Lilith, Part of Fortune)
+- House system selection (Placidus / Whole Sign / Equal House)
+- City selection with regional grouping (Japan nationwide + major international cities) and city name search
+- Custom latitude/longitude input for any location
 
-### トランジット・シナストリー・月間カレンダー
-- トランジットチャート（二重円）: 任意の日付の天体配置をネイタルに重ねて表示
-- シナストリーチャート（二重円）: 2人のネイタルチャートを重ね合わせて相性を分析
-- 月間トランジットカレンダー: 1ヶ月分の天体イベント（新月/満月・サインイングレス・逆行/順行・ネイタルアスペクト）を一覧表示
+### Profile Management
+- Save and recall birth data as profiles
+- Add and delete profiles
 
-### 用語集（グロッサリー）
-- チャート上の天体・サイン・ハウス・アスペクトをクリックすると、意味と解説をポップアップ表示
-- 天体配置一覧表のサイン・ハウスもクリック対応
+### Transit, Synastry & Monthly Calendar
+- Transit chart (bi-wheel): overlay planetary positions for any date on your natal chart
+- Synastry chart (bi-wheel): overlay two natal charts for compatibility analysis
+- Monthly transit calendar: view a month's celestial events (new/full moon, sign ingresses, retrograde/direct stations, natal aspects)
 
-### AI解釈・エクスポート
-- Claude AIによる日本語ストリーミング解釈（ネイタル・トランジット・シナストリー・月間フォーカス対応）
-- APIキー未登録でもプロンプト生成モードで利用可能
-- SVG / PNG / PDF エクスポート（PDFにはAI解釈テキストを含む）
+### Glossary
+- Click on planets, signs, houses, or aspects on the chart to view explanations in a popup
+- Planet table signs and houses are also clickable
 
-## 使い方
+### AI Interpretation & Export
+- Claude AI streaming interpretation (natal, transit, synastry, monthly focus)
+- Prompt generation mode available without API key
+- SVG / PNG / PDF export (PDF includes AI interpretation text)
 
-### 1. 出生データの入力とチャート生成
+### Multilingual Support
+- Japanese / English UI switching (configurable in Settings)
+- AI interpretation language follows the selected UI language
+- City search results also displayed in the selected language
 
-左サイドバーのフォームに以下を入力します：
+## Usage
 
-- **名前**: チャートに表示される名前
-- **生年月日**: 西暦（例: 1990年1月15日）
-- **出生時刻**: 24時間制（例: 14:30）。正確な時刻がハウスとアセンダントの計算に重要です
-- **出生地**: ドロップダウンから都市を選択。「都市名で検索」モードに切り替えると、任意の地名を検索して緯度経度を自動取得できます
+### 1. Entering Birth Data and Generating a Chart
 
-入力後「チャートを作成」ボタンを押すと、中央にネイタルチャートと天体配置表が表示されます。
+Enter the following in the left sidebar form:
 
-### 2. プロファイル登録（重要）
+- **Name**: displayed on the chart
+- **Date of birth**: year/month/day (e.g., January 15, 1990)
+- **Time of birth**: 24-hour format (e.g., 14:30). Accurate time is essential for house and ascendant calculation
+- **Place of birth**: select a city from the dropdown, or switch to "Search by city name" mode to search for any location and auto-detect coordinates
 
-出生データを**プロファイル**として保存しておくと、次回以降はプロファイルを選択するだけでチャートを再生成できます。
+Click "Create Chart" to display the natal chart and planet table in the center panel.
 
-- 出生データを入力したら、左サイドバー上部の「保存」ボタンでプロファイルに登録
-- 登録済みプロファイルはドロップダウンから選択可能
-- 不要になったプロファイルは「削除」ボタンで削除
+### 2. Registering Profiles (Important)
 
-> **プロファイル登録はトランジットとシナストリーの前提です。** トランジット（今日の運勢）を見るには、まず自分の出生データをプロファイルに登録してチャートを作成する必要があります。シナストリー（相性占い）では、2人目の相手をプロファイル一覧から選択するため、事前に相手のデータも登録しておく必要があります。
+Saving birth data as a **profile** lets you regenerate charts with a single click.
 
-### 3. トランジット（今日の運勢）
+- After entering birth data, click "Save" at the top of the left sidebar
+- Saved profiles are selectable from the dropdown
+- Delete unwanted profiles with the "Delete" button
 
-トランジットは、現在の天体配置があなたのネイタルチャートにどう影響しているかを読み解く機能です。
+> **Profile registration is required for Transit and Synastry.** To view transits (daily horoscope), you must first register your birth data as a profile. For synastry (compatibility), the second person's data must also be saved as a profile.
 
-1. プロファイルを選択してネイタルチャートを作成
-2. 右サイドバーの「トランジット」タブを選択
-3. 日付を選択（デフォルトは今日）し「計算」ボタンを押す
-4. チャートが二重円になり、外側にトランジット天体（アンバー色）が表示される
-5. 「解釈を生成」ボタンでAI解釈を取得
+### 3. Transit (Daily Horoscope)
 
-毎日の運勢チェックに活用できます。プロファイルを登録しておけば、日付を変えるだけで手軽に確認できます。
+Transit shows how current planetary positions affect your natal chart.
 
-### 4. シナストリー（相性占い）
+1. Select a profile and create a natal chart
+2. Select the "Transit" tab in the right sidebar
+3. Choose a date (defaults to today) and click "Calculate"
+4. The chart becomes a bi-wheel with transit planets (amber) on the outer ring
+5. Click "Generate Interpretation" for AI analysis
 
-シナストリーは、2人のネイタルチャートを重ね合わせて関係性の傾向を読み解く機能です。
+### 4. Synastry (Compatibility)
 
-1. 1人目のプロファイルを選択してネイタルチャートを作成
-2. 右サイドバーの「シナストリー」タブを選択
-3. 「2人目（プロファイルから選択）」のドロップダウンから相手を選択
-4. 「シナストリーを計算」ボタンを押す
-5. 二重円で2人の天体配置が表示される
-6. 「解釈を生成」ボタンでAI解釈を取得
+Synastry overlays two natal charts to analyze relationship tendencies.
 
-> **相手のプロファイルが事前に登録されている必要があります。** 家族・友人・パートナーなど、相性を見たい相手の出生データをあらかじめプロファイルに保存してください。
+1. Select the first person's profile and create a natal chart
+2. Select the "Synastry" tab in the right sidebar
+3. Choose the second person from the profile dropdown
+4. Click "Calculate Synastry"
+5. The bi-wheel displays both charts
+6. Click "Generate Interpretation" for AI analysis
 
-### 5. 月間トランジットカレンダー
+> **The second person's profile must be registered beforehand.** Save birth data for family, friends, or partners you want to compare.
 
-月間カレンダーは、1ヶ月分の天体イベントをカレンダー形式で一覧表示する機能です。
+### 5. Monthly Transit Calendar
 
-1. プロファイルを選択してネイタルチャートを作成
-2. 右サイドバーの「月間カレンダー」タブを選択
-3. 対象月を選択し「計算」ボタンを押す
-4. カレンダーグリッドにイベントのある日がハイライト表示される
-5. 日付をクリックすると、その日のイベント詳細（新月/満月・天体のサイン移動・逆行/順行・ネイタル天体とのアスペクト）が表示される
-6. 「月間フォーカスを生成」ボタンでAIによる月間運勢テキストを取得
+The monthly calendar displays celestial events for an entire month.
 
-### 6. エクスポート
+1. Select a profile and create a natal chart
+2. Select the "Monthly Calendar" tab in the right sidebar
+3. Choose the target month and click "Calculate"
+4. Days with events are highlighted in the calendar grid
+5. Click a date to see event details (new/full moon, sign ingresses, retrograde/direct stations, natal aspects)
+6. Click "Generate Monthly Focus" for an AI monthly forecast
 
-チャートと解釈テキストをファイルに出力できます。チャート下部の3つのボタンから選択してください：
+### 6. Export
 
-- **SVG**: チャート画像をベクター形式で保存（印刷に最適）
-- **PNG**: チャート画像をラスター形式で保存（SNS共有に最適）
-- **PDF**: チャート画像＋AI解釈テキストをA4レポートとして保存
+Export charts and interpretation text to files. Choose from 3 buttons below the chart:
 
-### 7. ハウスシステムの変更
+- **SVG**: save chart as vector image (ideal for printing)
+- **PNG**: save chart as raster image (ideal for social media)
+- **PDF**: save chart + AI interpretation as an A4 report
 
-アプリ右上の「設定」ボタンから、ハウスシステムを変更できます。
+### 7. Changing the House System
 
-- **プラシダス（Placidus）** — 現代西洋占星術の標準（デフォルト）
-- **ホールサイン（Whole Sign）** — 古典占星術・ヘレニズム系
-- **等分ハウス（Equal House）** — 英国系の伝統
+Change the house system from the "Settings" button in the top-right corner.
 
-変更は次回のチャート生成から反映されます。詳しくは後述の「ハウスシステムについて」を参照してください。
+- **Placidus** — modern Western astrology standard (default)
+- **Whole Sign** — classical / Hellenistic astrology
+- **Equal House** — British astrological tradition
 
-### 8. AI解釈の利用（Anthropic APIキーあり）
+Changes take effect on the next chart generation. See "About House Systems" below for details.
 
-Anthropic APIキーを登録すると、右サイドバーの「解釈を生成」ボタンで Claude AI がチャートの解釈をリアルタイムでストリーミング表示します。
+### 8. Using AI Interpretation (with Anthropic API Key)
 
-#### APIキーの登録方法
+Register an Anthropic API key to enable real-time streaming interpretations via Claude AI.
 
-1. [Anthropic Console](https://console.anthropic.com/) でアカウントを作成
-2. API Keys ページで新しいキーを生成
-3. アプリ右上の「設定」ボタンをクリック
-4. 表示されたダイアログにAPIキーを貼り付けて「保存」
+#### How to Register an API Key
 
-APIキーはローカルの設定ファイルに保存され、外部には送信されません（Anthropic APIへのリクエスト時のみ使用）。
+1. Create an account at [Anthropic Console](https://console.anthropic.com/)
+2. Generate a new key on the API Keys page
+3. Click "Settings" in the top-right corner of the app
+4. Paste the API key and click "Save"
 
-#### API利用コストの目安
+The API key is stored in a local settings file and is only sent to the Anthropic API.
 
-AI解釈は Anthropic Claude API（claude-sonnet-4-6）を使用します。チャート計算やPDF生成はローカル処理のため無料です。
+#### Estimated API Costs
 
-| 解釈タイプ | 入力トークン | 出力トークン | 1回あたりのコスト目安 |
+AI interpretation uses the Anthropic Claude API (claude-sonnet-4-6). Chart calculations and PDF generation are free (local processing).
+
+| Interpretation Type | Input Tokens | Output Tokens | Est. Cost per Request |
 |---|---|---|---|
-| ネイタル解釈 | ~1,500 | ~1,500〜2,500 | 約3〜5セント（約4〜7円） |
-| トランジット / シナストリー解釈 | ~2,500〜3,000 | ~1,500〜2,500 | 約4〜6セント（約6〜9円） |
-| 月間フォーカス（月間カレンダー） | ~2,000〜3,000 | ~1,500〜2,500 | 約4〜5セント（約6〜7円） |
+| Natal | ~1,500 | ~1,500–2,500 | ~$0.03–0.05 |
+| Transit / Synastry | ~2,500–3,000 | ~1,500–2,500 | ~$0.04–0.06 |
+| Monthly Focus | ~2,000–3,000 | ~1,500–2,500 | ~$0.04–0.05 |
 
-> トランジット・シナストリー・月間フォーカスはネイタルデータに加えてイベント情報も送信するため入力トークンが多くなりますが、入力単価は安いため合計コストの差は小さいです。料金の詳細は [Anthropic Pricing](https://www.anthropic.com/pricing) を参照してください。
+> Transit, synastry, and monthly focus send additional event data alongside natal data, increasing input tokens. However, since input pricing is lower, the total cost difference is small. See [Anthropic Pricing](https://www.anthropic.com/pricing) for details.
 
-### 9. プロンプト生成モード（APIキーなし）
+### 9. Prompt Generation Mode (without API Key)
 
-APIキーを登録していなくても、チャート生成とプロンプト生成は利用できます。
+Chart generation and prompt generation work without an API key.
 
-1. 出生データを入力してチャートを作成
-2. 右サイドバーの「プロンプトを生成」ボタンをクリック
-3. 生成されたプロンプト（システム指示＋チャートデータ）が表示される
-4. 「コピー」ボタンでクリップボードにコピー
-5. お好みのAIサービス（ChatGPT、Gemini、Claude Web等）に貼り付けて解釈を依頼
+1. Enter birth data and create a chart
+2. Click "Generate Prompt" in the right sidebar
+3. The generated prompt (system instructions + chart data) is displayed
+4. Click "Copy" to copy to clipboard
+5. Paste into your preferred AI service (ChatGPT, Gemini, Claude Web, etc.) for interpretation
 
-## ダウンロードとインストール
+## Download & Installation
 
-[Releases](https://github.com/osprey74/caelum/releases) ページから最新版のインストーラーをダウンロードしてください。
+Download the latest installer from the [Releases](https://github.com/osprey74/caelum/releases) page.
 
-本アプリはコード署名されていないため、OSのセキュリティ警告が表示されます。以下の手順で対処してください。
+This app is not code-signed, so you may see OS security warnings. Follow the steps below.
 
 ### Windows
 
-インストーラー（`.exe`）を実行すると「Windows によって PC が保護されました」（Microsoft Defender SmartScreen）が表示されます。
+Running the installer (`.exe`) will show "Windows protected your PC" (Microsoft Defender SmartScreen).
 
-1. 「詳細情報」をクリック
-2. 「実行」ボタンをクリック
+1. Click "More info"
+2. Click "Run anyway"
 
 ### macOS
 
-ダウンロードした `.dmg` を開いてアプリを Applications にドラッグした後、初回起動時に「"caelum"は、開発元を確認できないため開けません」と表示されます。
+After dragging the app from the `.dmg` to Applications, the first launch will show "caelum can't be opened because the developer cannot be verified."
 
-1. **システム設定** → **プライバシーとセキュリティ** を開く
-2. 画面下部に「"caelum" は開発元を確認できないため、使用がブロックされました」と表示されている
-3. 「このまま開く」をクリック
-4. パスワードを入力して許可
+1. Open **System Settings** → **Privacy & Security**
+2. At the bottom, you'll see "caelum was blocked because it is not from an identified developer"
+3. Click "Open Anyway"
+4. Enter your password to allow
 
-または、ターミナルで以下のコマンドを実行してから起動します：
+Alternatively, run the following command in Terminal before launching:
 
 ```bash
 xattr -cr /Applications/caelum.app
 ```
 
-## 技術スタック
+## Tech Stack
 
-| レイヤー | 技術 |
+| Layer | Technology |
 |---|---|
-| デスクトップシェル | Tauri v2 |
-| フロントエンド | React 18, TypeScript, Tailwind CSS, D3.js |
-| バックエンド | Python 3.10+, FastAPI, uvicorn |
-| 天体計算 | kerykeion（Swiss Ephemeris内包） |
-| AI解釈 | Anthropic Claude API（オプション） |
+| Desktop Shell | Tauri v2 |
+| Frontend | React 18, TypeScript, Tailwind CSS, D3.js |
+| Backend | Python 3.10+, FastAPI, uvicorn |
+| Ephemeris | kerykeion (Swiss Ephemeris) |
+| AI Interpretation | Anthropic Claude API (optional) |
 
-## セットアップ
+## Setup
 
-### 前提条件
+### Prerequisites
 
 - Node.js 18+
 - Python 3.10+
-- Rust（Tauri v2用）
+- Rust (for Tauri v2)
 
-### インストール
+### Installation
 
 ```bash
-# フロントエンド依存
+# Frontend dependencies
 npm install
 
-# サイドカー依存
+# Sidecar dependencies
 cd sidecar
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 開発サーバー起動
+### Development Server
 
 ```bash
-# サイドカー（別ターミナル）
+# Sidecar (separate terminal)
 cd sidecar && source .venv/bin/activate
 uvicorn main:app --port 8765 --reload
 
-# Tauri + フロントエンド
+# Tauri + Frontend
 npm run tauri dev
 ```
 
-## 占星術設定
+## Astrological Settings
 
-- 黄道：熱帯（Tropical）
-- ハウスシステム：ユーザー選択可能（既定: プラシダス / 選択肢: ホールサイン, 等分ハウス）
-- 天体：10天体 + キロン・リリス・フォルテュナ + ASC/MC
-- アスペクト：主要5種 + セミスクエア・クインカンクス
-- 解釈軸：モダン西洋（性格・傾向）
+- Zodiac: Tropical
+- House System: user-selectable (default: Placidus / options: Whole Sign, Equal House)
+- Bodies: 10 planets + Chiron, Lilith, Part of Fortune + ASC/MC
+- Aspects: major 5 + semi-square, quincunx
+- Interpretation: modern Western (personality & tendencies)
 
-## ハウスシステムについて
+## About House Systems
 
-ハウスシステムとは、天球を12の「人生の領域（ハウス）」に分割する方法論です。
-同じ出生データでも、採用するシステムによってハウスの境界線（カスプ）の位置が変わり、
-天体がどのハウスに入るかが異なる場合があります。
+A house system is a method of dividing the celestial sphere into 12 "areas of life" (houses). Even with the same birth data, the house cusp positions change depending on the system, which may place planets in different houses.
 
-本アプリは以下の3種類のハウスシステムに対応しています。
+This app supports the following 3 house systems:
 
-### プラシダス（Placidus）
+### Placidus
 
-17世紀のイタリアの占星術師プラシダス・デ・ティティスが体系化した手法です。
-天体が地平線から子午線へ移動する時間を三等分してハウスを算出します。
-現代の西洋占星術で最も広く使われており、雑誌の星座占いから本格的な心理占星術まで、
-幅広い場面で採用されている事実上の標準システムです。
+Systematized by the 17th-century Italian astrologer Placidus de Titis. It divides houses by trisecting the time it takes for a celestial body to move from the horizon to the meridian. It is the most widely used system in modern Western astrology, from magazine horoscopes to serious psychological astrology.
 
-> 本アプリのデフォルト設定です。
+> This is the app's default setting.
 
-### ホールサイン（Whole Sign）
+### Whole Sign
 
-紀元前後のヘレニズム時代に用いられた、最も古いハウスシステムのひとつです。
-アセンダント（ASC）が属するサイン全体を第1ハウスとし、以降の12サインがそのまま
-各ハウスに対応します。各ハウスが必ず30度ちょうどになるシンプルな構造が特徴で、
-近年の古典占星術・ヘレニズム占星術の再評価とともに急速に普及しています。
+One of the oldest house systems, used in the Hellenistic era. The entire sign containing the Ascendant (ASC) becomes the 1st house, and subsequent signs correspond to each house. Each house is exactly 30 degrees, making it simple and consistent. It has seen rapid adoption alongside the revival of classical and Hellenistic astrology.
 
-> **注意:** ホールサイン選択時、MC（中天）はハウスカスプと一致しない場合があります。
-> MCはチャート上に独立した感受点として表示されます。
+> **Note:** When using Whole Sign, the MC (Midheaven) may not align with a house cusp. The MC is displayed as an independent sensitive point on the chart.
 
-### 等分ハウス（Equal House）
+### Equal House
 
-アセンダントを第1ハウスの始点とし、そこから30度ずつ等間隔に12分割するシステムです。
-ホールサインと同様に計算がシンプルで、高緯度の出生地でも安定して動作します。
-英国系の占星術の伝統に根ざしており、プラシダスで一部のハウスが極端に広くなる場合の
-代替として使われることもあります。
+Starting from the Ascendant as the 1st house cusp, the ecliptic is divided into 12 equal 30-degree segments. Like Whole Sign, it is simple to calculate and works reliably at high latitudes. Rooted in the British astrological tradition, it is sometimes used as an alternative when Placidus produces extremely wide houses.
 
-> **注意:** 等分ハウス選択時も、MC はハウスカスプと独立して表示されます。
+> **Note:** When using Equal House, the MC is also displayed independently of house cusps.
 
-## ライセンス
+## License
 
 [MIT License](LICENSE)
 
-**注意**: 本アプリが依存する [kerykeion](https://github.com/g-battaglia/kerykeion) は AGPL v3 ライセンスです。kerykeion を含むバイナリの配布時は AGPL v3 の条件に従う必要があります。
+**Note**: This app depends on [kerykeion](https://github.com/g-battaglia/kerykeion), which is licensed under AGPL v3. Distribution of binaries containing kerykeion must comply with AGPL v3 terms.
 
-## アイコン
+## Icons
 
 <a href="https://www.flaticon.com/free-icons/orbit" title="orbit icons">Orbit icons created by Eucalyp - Flaticon</a>
+
+## Support
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/osprey74)

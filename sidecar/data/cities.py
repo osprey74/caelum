@@ -104,6 +104,52 @@ def get_city(name: str) -> CityData | None:
     return CITIES.get(name)
 
 
+# --- 英語表示名 ---
+
+CITY_NAMES_EN: dict[str, str] = {
+    # 北海道
+    "札幌": "Sapporo", "旭川": "Asahikawa", "函館": "Hakodate",
+    "室蘭": "Muroran", "釧路": "Kushiro", "帯広": "Obihiro",
+    "稚内": "Wakkanai", "北見": "Kitami", "網走": "Abashiri", "根室": "Nemuro",
+    # 東北
+    "青森": "Aomori", "盛岡": "Morioka", "仙台": "Sendai",
+    "秋田": "Akita", "山形": "Yamagata", "福島": "Fukushima",
+    # 関東
+    "東京": "Tokyo", "横浜": "Yokohama", "さいたま": "Saitama",
+    "千葉": "Chiba", "水戸": "Mito", "宇都宮": "Utsunomiya", "前橋": "Maebashi",
+    # 中部
+    "新潟": "Niigata", "富山": "Toyama", "金沢": "Kanazawa",
+    "福井": "Fukui", "甲府": "Kofu", "長野": "Nagano",
+    "岐阜": "Gifu", "静岡": "Shizuoka", "名古屋": "Nagoya",
+    # 近畿
+    "津": "Tsu", "大津": "Otsu", "京都": "Kyoto",
+    "大阪": "Osaka", "神戸": "Kobe", "奈良": "Nara", "和歌山": "Wakayama",
+    # 中国
+    "鳥取": "Tottori", "松江": "Matsue", "岡山": "Okayama",
+    "広島": "Hiroshima", "山口": "Yamaguchi",
+    # 四国
+    "徳島": "Tokushima", "高松": "Takamatsu", "松山": "Matsuyama", "高知": "Kochi",
+    # 九州・沖縄
+    "福岡": "Fukuoka", "佐賀": "Saga", "長崎": "Nagasaki",
+    "熊本": "Kumamoto", "大分": "Oita", "宮崎": "Miyazaki",
+    "鹿児島": "Kagoshima", "那覇": "Naha",
+    # 海外
+    "ニューヨーク": "New York", "ロサンゼルス": "Los Angeles",
+    "シカゴ": "Chicago", "ロンドン": "London", "パリ": "Paris",
+    "ベルリン": "Berlin", "ローマ": "Rome", "北京": "Beijing",
+    "上海": "Shanghai", "台北": "Taipei", "ソウル": "Seoul",
+    "バンコク": "Bangkok", "シンガポール": "Singapore",
+    "シドニー": "Sydney", "ムンバイ": "Mumbai", "ドバイ": "Dubai",
+    "サンパウロ": "São Paulo",
+}
+
+GROUP_LABELS_EN: dict[str, str] = {
+    "北海道": "Hokkaido", "東北": "Tohoku", "関東": "Kanto",
+    "中部": "Chubu", "近畿": "Kinki", "中国": "Chugoku",
+    "四国": "Shikoku", "九州・沖縄": "Kyushu & Okinawa", "海外": "Overseas",
+}
+
+
 # --- 地方グループ定義（UIの optgroup 用） ---
 
 _JAPAN_GROUPS: list[CityGroup] = [
@@ -120,19 +166,45 @@ _JAPAN_GROUPS: list[CityGroup] = [
 _JAPAN_TZ = "Asia/Tokyo"
 
 
-def get_grouped_cities() -> list[CityGroup]:
-    """地方グループ付きの都市一覧を返す。"""
+class CityOption(TypedDict):
+    key: str
+    display: str
+
+
+class CityGroupLocalized(TypedDict):
+    label: str
+    cities: list[CityOption]
+
+
+def get_grouped_cities(lang: str = "ja") -> list[CityGroupLocalized]:
+    """地方グループ付きの都市一覧を返す。lang="en" で英語表示名を返す。"""
     overseas = sorted(
         [name for name, data in CITIES.items() if data["tz"] != _JAPAN_TZ],
     )
-    groups: list[CityGroup] = list(_JAPAN_GROUPS)
-    groups.append({"label": "海外", "cities": overseas})
-    return groups
+    raw_groups: list[CityGroup] = list(_JAPAN_GROUPS)
+    raw_groups.append({"label": "海外", "cities": overseas})
+
+    result: list[CityGroupLocalized] = []
+    for g in raw_groups:
+        label = GROUP_LABELS_EN.get(g["label"], g["label"]) if lang == "en" else g["label"]
+        cities = [
+            {
+                "key": c,
+                "display": CITY_NAMES_EN.get(c, c) if lang == "en" else c,
+            }
+            for c in g["cities"]
+        ]
+        result.append({"label": label, "cities": cities})
+    return result
 
 
 def get_city_names() -> list[str]:
     """後方互換: フラットな都市名リスト。"""
     result: list[str] = []
-    for group in get_grouped_cities():
-        result.extend(group["cities"])
+    for g in _JAPAN_GROUPS:
+        result.extend(g["cities"])
+    overseas = sorted(
+        [name for name, data in CITIES.items() if data["tz"] != _JAPAN_TZ],
+    )
+    result.extend(overseas)
     return result

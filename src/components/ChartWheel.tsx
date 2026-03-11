@@ -1,4 +1,5 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
+import { useTranslation } from "react-i18next";
 import * as d3 from "d3";
 import {
   ChartResponse,
@@ -15,13 +16,7 @@ import {
 } from "../types/astrology";
 import type { GlossaryCategory } from "../data/glossary";
 
-const PLANET_NAMES_JA: Record<string, string> = {
-  Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
-  Mars: "火星", Jupiter: "木星", Saturn: "土星", Uranus: "天王星",
-  Neptune: "海王星", Pluto: "冥王星",
-  Chiron: "キロン", Mean_Lilith: "リリス", Pars_Fortunae: "フォルテュナ",
-  Ascendant: "ASC", Medium_Coeli: "MC",
-};
+type TFunction = (key: string) => string;
 
 export interface ChartWheelHandle {
   getSvgElement: () => SVGSVGElement | null;
@@ -67,6 +62,7 @@ function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
 }
 
 const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ data, transitData, size = 600, onGlossaryClick }, ref) {
+  const { t } = useTranslation();
   const svgRef = useRef<SVGSVGElement>(null);
   const glossaryCallbackRef = useRef(onGlossaryClick);
   glossaryCallbackRef.current = onGlossaryClick;
@@ -78,8 +74,8 @@ const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ dat
   useEffect(() => {
     if (!svgRef.current || !data) return;
     const cb = (e: GlossaryClickEvent) => glossaryCallbackRef.current?.(e);
-    drawChart(svgRef.current, data, size, transitData ?? undefined, cb);
-  }, [data, transitData, size]);
+    drawChart(svgRef.current, data, size, t, transitData ?? undefined, cb);
+  }, [data, transitData, size, t]);
 
   return (
     <svg
@@ -94,7 +90,7 @@ const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ dat
 
 export default ChartWheel;
 
-function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number, transitData?: DualChartResponse, onGlossary?: (e: GlossaryClickEvent) => void) {
+function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number, t: TFunction, transitData?: DualChartResponse, onGlossary?: (e: GlossaryClickEvent) => void) {
   const sel = d3.select(svg);
   sel.selectAll("*").remove();
 
@@ -143,17 +139,17 @@ function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number, transi
   // === Aspect lines ===
   if (hasTransit) {
     // Transit mode: draw transit cross-aspects
-    drawAspects(g, cx, cy, innerR * 0.95, transitData.aspects, offset, onGlossary);
+    drawAspects(g, cx, cy, innerR * 0.95, transitData.aspects, offset, t, onGlossary);
   } else {
-    drawAspects(g, cx, cy, innerR * 0.95, data.aspects, offset, onGlossary);
+    drawAspects(g, cx, cy, innerR * 0.95, data.aspects, offset, t, onGlossary);
   }
 
   // === Natal Planets ===
-  drawPlanets(g, cx, cy, planetR, houseR, subject, offset, onGlossary);
+  drawPlanets(g, cx, cy, planetR, houseR, subject, offset, t, onGlossary);
 
   // === Transit Planets (outer ring) ===
   if (hasTransit) {
-    drawTransitPlanets(g, cx, cy, transitPlanetR, outerR, transitData.second_subject, offset);
+    drawTransitPlanets(g, cx, cy, transitPlanetR, outerR, transitData.second_subject, offset, t);
   }
 }
 
@@ -163,6 +159,7 @@ function drawTransitPlanets(
   planetR: number, innerR: number,
   subject: DualChartResponse["second_subject"],
   offset: number,
+  t: TFunction,
 ) {
   const planets = PLANET_KEYS.map((k) => subject[k] as PlanetData);
   for (const k of OPTIONAL_PLANET_KEYS) {
@@ -199,12 +196,12 @@ function drawTransitPlanets(
       .attr("stroke-width", 0.4);
 
     // Planet symbol (transit = amber color)
-    const planetName = PLANET_NAMES_JA[p.name] || p.name;
+    const planetName = t("planets." + p.name) || p.name;
     const signName = SIGN_NAMES[p.sign] || p.sign;
     const deg = Math.floor(p.position);
     const min = Math.floor((p.position - deg) * 60);
-    const retroLabel = p.retrograde ? " (逆行中)" : "";
-    const tooltip = `T.${planetName}  ${signName} ${deg}°${min.toString().padStart(2, "0")}'${retroLabel}`;
+    const retroLabel = p.retrograde ? ` ${t("chart.retrograde")}` : "";
+    const tooltip = `${t("chart.transitPrefix")}${planetName}  ${signName} ${deg}°${min.toString().padStart(2, "0")}'${retroLabel}`;
 
     const planetText = g.append("text")
       .attr("x", pos.x).attr("y", pos.y)
@@ -327,12 +324,23 @@ function drawAspects(
   r: number,
   aspects: ChartResponse["aspects"],
   offset: number,
+  t: TFunction,
   onGlossary?: (e: GlossaryClickEvent) => void,
 ) {
   // Only draw major aspects with tight orbs
   const majorAspects = aspects.filter(
     (a) => a.aspect in ASPECT_COLORS && a.orbit < 8
   );
+
+  const aspectI18nKeys: Record<string, string> = {
+    conjunction: "aspects.conjunction",
+    opposition: "aspects.opposition",
+    trine: "aspects.trine",
+    sextile: "aspects.sextile",
+    square: "aspects.square",
+    semi_square: "aspects.semi_square",
+    quincunx: "aspects.quincunx",
+  };
 
   for (const a of majorAspects) {
     const ang1 = toAngle(a.p1_abs_pos, offset);
@@ -341,13 +349,6 @@ function drawAspects(
     const p2 = polarToXY(cx, cy, r, ang2);
 
     const opacity = Math.max(0.15, 0.6 - a.orbit * 0.06);
-    const aspectNames: Record<string, string> = {
-      conjunction: "コンジャンクション (0°)",
-      opposition: "オポジション (180°)",
-      trine: "トライン (120°)",
-      sextile: "セクスタイル (60°)",
-      square: "スクエア (90°)",
-    };
     const aspectKey = a.aspect;
     const aspectLine = g.append("line")
       .attr("x1", p1.x).attr("y1", p1.y)
@@ -356,10 +357,10 @@ function drawAspects(
       .attr("stroke-width", onGlossary ? 2.5 : 0.8)
       .attr("opacity", opacity);
     bindClick(aspectLine, onGlossary ? () => onGlossary({ category: "aspect", key: aspectKey }) : undefined);
-    const p1ja = PLANET_NAMES_JA[a.p1_name] || a.p1_name;
-    const p2ja = PLANET_NAMES_JA[a.p2_name] || a.p2_name;
-    const aspectName = aspectNames[a.aspect] || a.aspect;
-    aspectLine.append("title").text(`${p1ja} ${aspectName} ${p2ja}  オーブ: ${a.orbit.toFixed(1)}°`);
+    const p1Name = t("planets." + a.p1_name) || a.p1_name;
+    const p2Name = t("planets." + a.p2_name) || a.p2_name;
+    const aspectName = aspectI18nKeys[a.aspect] ? t(aspectI18nKeys[a.aspect]) : a.aspect;
+    aspectLine.append("title").text(`${p1Name} ${aspectName} ${p2Name}  ${t("chart.orb")}${a.orbit.toFixed(1)}°`);
   }
 }
 
@@ -369,6 +370,7 @@ function drawPlanets(
   planetR: number, innerR: number,
   subject: ChartResponse["subject"],
   offset: number,
+  t: TFunction,
   onGlossary?: (e: GlossaryClickEvent) => void,
 ) {
   const planets = PLANET_KEYS.map((k) => subject[k] as PlanetData);
@@ -411,13 +413,13 @@ function drawPlanets(
       .attr("stroke-width", 0.5);
 
     // Planet symbol with tooltip
-    const planetName = PLANET_NAMES_JA[p.name] || p.name;
+    const planetName = t("planets." + p.name) || p.name;
     const signName = SIGN_NAMES[p.sign] || p.sign;
     const deg = Math.floor(p.position);
     const min = Math.floor((p.position - deg) * 60);
     const houseNum = p.house ? p.house.replace("_House", "").replace("_", " ") : "";
-    const retroLabel = p.retrograde ? " (逆行中)" : "";
-    const tooltip = `${planetName}  ${signName} ${deg}°${min.toString().padStart(2, "0")}'  ${houseNum ? `第${houseNum}ハウス` : ""}${retroLabel}`;
+    const retroLabel = p.retrograde ? ` ${t("chart.retrograde")}` : "";
+    const tooltip = `${planetName}  ${signName} ${deg}°${min.toString().padStart(2, "0")}'  ${houseNum ? `${t("chart.housePrefix")}${houseNum}${t("chart.houseSuffix")}` : ""}${retroLabel}`;
 
     const pKey = p.name;
     const planetText = g.append("text")

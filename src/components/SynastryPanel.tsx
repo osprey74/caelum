@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import Markdown from "react-markdown";
 import { fetchProfiles, fetchSynastry, streamSynastryInterpretation, generateSynastryPrompt, BirthData } from "../lib/api";
 import type { Profile, DualChartResponse, SynastryRequest } from "../types/astrology";
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, onTextChange, onPerson2NameChange }: Props) {
+  const { t } = useTranslation();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [person2Id, setPerson2Id] = useState("");
   const [person2Data, setPerson2Data] = useState<BirthData | null>(null);
@@ -116,6 +118,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
       lng2: person2Data.lng,
       timezone2: person2Data.timezone,
       house_system: birthData.house_system,
+      lang: birthData.lang,
     };
   }
 
@@ -130,7 +133,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
       const data = await fetchSynastry(req);
       onSynastryData(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "シナストリー計算に失敗しました。");
+      setError(e instanceof Error ? e.message : t("synastry.error"));
       onSynastryData(null);
     } finally {
       setLoading(false);
@@ -157,7 +160,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
       generateSynastryPrompt(req)
         .then((prompt) => setInterpText(prompt))
         .catch((e) =>
-          setError(e instanceof Error ? e.message : "プロンプト生成に失敗しました。"),
+          setError(e instanceof Error ? e.message : t("common.promptError")),
         )
         .finally(() => setInterpLoading(false));
     }
@@ -207,30 +210,30 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
 
   return (
     <div className="flex flex-col h-full">
-      <h2 className="text-lg font-bold text-gray-200 mb-3">シナストリー（相性）</h2>
+      <h2 className="text-lg font-bold text-gray-200 mb-3">{t("synastry.title")}</h2>
 
       {/* Person 1: current natal chart */}
       <div className="mb-2">
-        <label className="block text-xs text-gray-400 mb-1">1人目（ネイタルチャート）</label>
+        <label className="block text-xs text-gray-400 mb-1">{t("synastry.person1")}</label>
         <div className="rounded bg-gray-800/50 border border-gray-700 px-3 py-2 text-sm text-gray-300">
           {birthData ? (
             <span>{birthData.name}（{birthData.year}/{birthData.month}/{birthData.day}）</span>
           ) : (
-            <span className="text-gray-500">出生データを入力してください</span>
+            <span className="text-gray-500">{t("synastry.person1Placeholder")}</span>
           )}
         </div>
       </div>
 
       {/* Person 2: select from profiles */}
       <div className="mb-3">
-        <label className="block text-xs text-gray-400 mb-1">2人目（プロファイルから選択）</label>
+        <label className="block text-xs text-gray-400 mb-1">{t("synastry.person2")}</label>
         <select
           value={person2Id}
           onChange={handlePerson2Select}
           className="w-full rounded bg-gray-800 border border-gray-600 px-3 py-2 text-gray-100 focus:outline-none focus:border-pink-500 text-sm"
           disabled={loading}
         >
-          <option value="">選択してください...</option>
+          <option value="">{t("synastry.selectPlaceholder")}</option>
           {profiles.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}（{p.year}/{p.month}/{p.day}）
@@ -239,7 +242,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
         </select>
         {profiles.length === 0 && (
           <p className="text-xs text-gray-500 mt-1">
-            プロファイルがありません。左パネルで出生データを保存してください。
+            {t("synastry.noProfiles")}
           </p>
         )}
       </div>
@@ -251,7 +254,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
         disabled={!canCalculate}
         className={`${btnClass} bg-pink-600 hover:bg-pink-500 mb-3 w-full`}
       >
-        {loading ? "計算中..." : "シナストリーを計算"}
+        {loading ? t("common.calculating") : t("synastry.calculateSynastry")}
       </button>
 
       {error && (
@@ -262,24 +265,24 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
 
       {/* Interpretation */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-gray-400">{isPromptMode ? "AI プロンプト" : "AI 解釈"}</span>
+        <span className="text-sm text-gray-400">{isPromptMode ? t("common.aiPrompt") : t("common.aiInterpretation")}</span>
         <div className="flex gap-2">
           {interpText && !interpLoading && (
             <button type="button" onClick={handleCopy}
               className="rounded bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600 transition-colors">
-              {copied ? "コピー済み" : "コピー"}
+              {copied ? t("common.copied") : t("common.copy")}
             </button>
           )}
           {interpLoading && hasApiKey ? (
             <button type="button" onClick={handleCancel}
               className={`${btnClass} bg-red-700 hover:bg-red-600`}>
-              中止
+              {t("common.cancel")}
             </button>
           ) : (
             <button type="button" onClick={handleInterpret}
               disabled={!canCalculate || interpLoading}
               className={`${btnClass} bg-pink-600 hover:bg-pink-500`}>
-              {isPromptMode ? "プロンプトを生成" : "解釈を生成"}
+              {isPromptMode ? t("common.generatePrompt") : t("common.generateInterpretation")}
             </button>
           )}
         </div>
@@ -287,7 +290,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
 
       {isPromptMode && !interpText && !interpLoading && (
         <div className="mb-2 rounded bg-amber-900/30 border border-amber-700 px-3 py-2 text-xs text-amber-300">
-          APIキー未設定のため、プロンプト生成モードです。生成されたテキストをお使いのAIにコピー＆ペーストしてください。
+          {t("common.noApiKeyMessage")}
         </div>
       )}
 
@@ -331,9 +334,9 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
           <p className="text-gray-500">
             {birthData
               ? isPromptMode
-                ? "2人目を選択し「シナストリーを計算」後、「プロンプトを生成」ボタンを押すとAIに渡すテキストが生成されます。"
-                : "2人目を選択し「シナストリーを計算」ボタンを押すと、相性チャートが表示されます。"
-              : "まず出生データを入力してチャートを作成してください。"}
+                ? t("synastry.promptHelp")
+                : t("synastry.aiHelp")
+              : t("common.noChartFirst")}
           </p>
         )}
       </div>

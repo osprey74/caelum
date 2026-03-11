@@ -47,16 +47,41 @@ PLANET_NAMES_JA: dict[str, str] = {
     "ascendant": "ASC", "medium_coeli": "MC",
 }
 
+PLANET_NAMES_EN: dict[str, str] = {
+    "sun": "Sun", "moon": "Moon", "mercury": "Mercury", "venus": "Venus",
+    "mars": "Mars", "jupiter": "Jupiter", "saturn": "Saturn", "uranus": "Uranus",
+    "neptune": "Neptune", "pluto": "Pluto",
+    "ascendant": "ASC", "medium_coeli": "MC",
+}
+
 SIGN_NAMES_JA: dict[str, str] = {
     "Ari": "牡羊座", "Tau": "牡牛座", "Gem": "双子座", "Can": "蟹座",
     "Leo": "獅子座", "Vir": "乙女座", "Lib": "天秤座", "Sco": "蠍座",
     "Sag": "射手座", "Cap": "山羊座", "Aqu": "水瓶座", "Pis": "魚座",
 }
 
+SIGN_NAMES_EN: dict[str, str] = {
+    "Ari": "Aries", "Tau": "Taurus", "Gem": "Gemini", "Can": "Cancer",
+    "Leo": "Leo", "Vir": "Virgo", "Lib": "Libra", "Sco": "Scorpio",
+    "Sag": "Sagittarius", "Cap": "Capricorn", "Aqu": "Aquarius", "Pis": "Pisces",
+}
+
 ASPECT_NAMES_JA: dict[str, str] = {
     "conjunction": "合", "sextile": "セクスタイル",
     "square": "スクエア", "trine": "トライン", "opposition": "オポジション",
 }
+
+ASPECT_NAMES_EN: dict[str, str] = {
+    "conjunction": "Conjunction", "sextile": "Sextile",
+    "square": "Square", "trine": "Trine", "opposition": "Opposition",
+}
+
+
+def _labels(lang: str = "ja") -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """言語に応じたラベル辞書を返す。"""
+    if lang == "en":
+        return PLANET_NAMES_EN, SIGN_NAMES_EN, ASPECT_NAMES_EN
+    return PLANET_NAMES_JA, SIGN_NAMES_JA, ASPECT_NAMES_JA
 
 
 @dataclass
@@ -112,8 +137,11 @@ def compute_monthly_calendar(
     name: str, year: int, month: int, day: int, hour: int, minute: int,
     lat: float, lng: float, tz_str: str, house_system: str,
     cal_year: int, cal_month: int,
+    lang: str = "ja",
 ) -> dict:
     """月間カレンダーを計算して返す。"""
+    planet_names, sign_names, aspect_names = _labels(lang)
+
     # ネイタルサブジェクト
     natal = AstrologicalSubjectFactory.from_birth_data(
         name, year, month, day, hour, minute,
@@ -174,17 +202,19 @@ def compute_monthly_calendar(
                 curr_sun.abs_pos, curr_moon.abs_pos,
             )
             if phase == "new_moon":
-                sign_ja = SIGN_NAMES_JA.get(curr_moon.sign, curr_moon.sign)
+                sign_disp = sign_names.get(curr_moon.sign, curr_moon.sign)
+                desc = f"New Moon ({sign_disp})" if lang == "en" else f"新月（{sign_disp}）"
                 events.append(CalendarEvent(
                     type="new_moon", planet="moon",
-                    description=f"新月（{sign_ja}）",
+                    description=desc,
                     detail=curr_moon.sign,
                 ))
             elif phase == "full_moon":
-                sign_ja = SIGN_NAMES_JA.get(curr_moon.sign, curr_moon.sign)
+                sign_disp = sign_names.get(curr_moon.sign, curr_moon.sign)
+                desc = f"Full Moon ({sign_disp})" if lang == "en" else f"満月（{sign_disp}）"
                 events.append(CalendarEvent(
                     type="full_moon", planet="moon",
-                    description=f"満月（{sign_ja}）",
+                    description=desc,
                     detail=curr_moon.sign,
                 ))
 
@@ -196,11 +226,12 @@ def compute_monthly_calendar(
                 continue
 
             if curr_p.sign != prev_p.sign:
-                pname = PLANET_NAMES_JA.get(key, key)
-                sign_ja = SIGN_NAMES_JA.get(curr_p.sign, curr_p.sign)
+                pname = planet_names.get(key, key)
+                sign_disp = sign_names.get(curr_p.sign, curr_p.sign)
+                desc = f"{pname} enters {sign_disp}" if lang == "en" else f"{pname}が{sign_disp}に移動"
                 events.append(CalendarEvent(
                     type="ingress", planet=key,
-                    description=f"{pname}が{sign_ja}に移動",
+                    description=desc,
                     detail=curr_p.sign,
                 ))
 
@@ -216,16 +247,18 @@ def compute_monthly_calendar(
                 continue
 
             if curr_p.retrograde and not prev_p.retrograde:
-                pname = PLANET_NAMES_JA.get(key, key)
+                pname = planet_names.get(key, key)
+                desc = f"{pname} retrograde begins" if lang == "en" else f"{pname}逆行開始"
                 events.append(CalendarEvent(
                     type="retrograde", planet=key,
-                    description=f"{pname}逆行開始",
+                    description=desc,
                 ))
             elif not curr_p.retrograde and prev_p.retrograde:
-                pname = PLANET_NAMES_JA.get(key, key)
+                pname = planet_names.get(key, key)
+                desc = f"{pname} goes direct" if lang == "en" else f"{pname}順行へ"
                 events.append(CalendarEvent(
                     type="direct", planet=key,
-                    description=f"{pname}順行へ",
+                    description=desc,
                 ))
 
         # --- ネイタル天体とのアスペクト検出（当日にexact付近） ---
@@ -247,12 +280,16 @@ def compute_monthly_calendar(
 
                     # exactに近づいた日（1度以内かつ前日より近い）
                     if curr_delta <= 1.0 and curr_delta <= prev_delta:
-                        t_name = PLANET_NAMES_JA.get(t_key, t_key)
-                        n_name = PLANET_NAMES_JA.get(n_key, n_key)
-                        asp_ja = ASPECT_NAMES_JA.get(asp_name, asp_name)
+                        t_name = planet_names.get(t_key, t_key)
+                        n_name = planet_names.get(n_key, n_key)
+                        asp_disp = aspect_names.get(asp_name, asp_name)
+                        if lang == "en":
+                            desc = f"T.{t_name} {asp_disp} N.{n_name}"
+                        else:
+                            desc = f"T.{t_name}とN.{n_name}の{asp_disp}"
                         events.append(CalendarEvent(
                             type="natal_aspect", planet=t_key,
-                            description=f"T.{t_name}とN.{n_name}の{asp_ja}",
+                            description=desc,
                             detail=asp_name,
                         ))
 

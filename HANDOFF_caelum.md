@@ -2,7 +2,7 @@
 
 **作成日**: 2026-03-09
 **最終更新**: 2026-03-11
-**ステータス**: Phase 4-1, 4-2 完了（4-3 多言語対応 未着手）
+**ステータス**: Phase 4 全完了（4-1 用語集、4-2 月間カレンダー、4-3 多言語対応）
 **引き継ぎ先**: Claude Code
 
 ---
@@ -778,8 +778,11 @@ cd sidecar && pip install -r requirements.txt
 [x] 4-2: バックエンド 月間トランジット一括計算エンドポイント                    ← 2026-03-11
 [x] 4-2: フロントエンド カレンダーUI                                          ← 2026-03-11
 [x] 4-2: AI による月間フォーカスポイント生成                                  ← 2026-03-11
-[ ] 4-3: i18next 導入 + UI文字列の外部化（ja.json / en.json）
-[ ] 4-3: 解釈言語切替（プロンプト言語パラメータ）
+[x] 4-3: i18next 導入 + UI文字列の外部化（ja.json / en.json）                  ← 2026-03-11
+[x] 4-3: 解釈言語切替（プロンプト言語パラメータ）                              ← 2026-03-11
+[x] 4-3: README.md → README.ja.md リネーム、英語 README.md 新規作成            ← 2026-03-11
+[x] 4-3: 用語集・Sign名の英語翻訳                                            ← 2026-03-11
+[x] 4-3: 都市名検索・カレンダーイベント・PDFの多言語対応                        ← 2026-03-11
 ```
 
 ---
@@ -1050,6 +1053,47 @@ cd sidecar && pip install -r requirements.txt
   - 月間カレンダーの使い方セクション・APIコスト情報は前セッションで追加済み
 
 **Phase 4-1, 4-2 チェックリスト完了。残り: 4-3 多言語対応。**
+
+### 2026-03-11（第9セッション — Phase 4-3 多言語対応）
+
+**完了した作業:**
+- **Phase 4-3: 多言語対応（日本語 / 英語）**
+  - i18n基盤:
+    - `npm install i18next react-i18next` 導入
+    - `src/i18n/index.ts`: i18next 初期化、localStorage 永続化（`liber-caeli-language` キー）
+    - `src/i18n/locales/ja.json`: 日本語翻訳ファイル（全UIテキスト）
+    - `src/i18n/locales/en.json`: 英語翻訳ファイル（全UIテキスト）
+    - `src/main.tsx`: i18n import 追加
+  - フロントエンド（全12コンポーネント更新）:
+    - `App.tsx`, `BirthDataForm.tsx`, `ProfileList.tsx`, `InterpretationPanel.tsx`, `TransitPanel.tsx`, `SynastryPanel.tsx`, `CalendarPanel.tsx`, `ExportButtons.tsx`, `ApiKeyDialog.tsx`, `GlossaryModal.tsx`, `PlanetTable.tsx`, `ChartWheel.tsx`
+    - 全ハードコード日本語文字列を `t()` 関数に置換
+    - `ApiKeyDialog.tsx`: 言語切替ドロップダウン追加（`setLanguage()` で即時切替）
+    - `PlanetTable.tsx`: `SIGN_NAMES` ハードコード → `t("signs.Ari")` 等の i18n キーに変更
+    - `App.tsx`: `useEffect` で言語変更時に `birthData.lang` を自動更新
+    - `ExportButtons.tsx`: PDF レポートタイトルを `t("pdf.reportTitle")` で多言語化
+  - サイドカー:
+    - `sidecar/prompts/interpretation.py`: `SYSTEM_PROMPT_EN` + `get_system_prompt(lang)` 追加
+    - `sidecar/prompts/transit.py`: `TRANSIT_SYSTEM_PROMPT_EN` + `get_transit_prompt(lang)` 追加
+    - `sidecar/prompts/synastry.py`: `SYNASTRY_SYSTEM_PROMPT_EN` + `get_synastry_prompt(lang)` 追加
+    - `sidecar/prompts/monthly.py`: `MONTHLY_SYSTEM_PROMPT_EN` + `get_monthly_prompt(lang)` 追加
+    - `sidecar/routers/interpret.py`: `_LABELS` 辞書で JA/EN コンテキストラベル切替、全エンドポイントで `data.lang` 使用
+    - `sidecar/routers/geocode.py`: `lang` クエリパラメータ追加、Nominatim `accept-language` を言語に応じて切替
+    - `sidecar/models/schemas.py`: 全スキーマに `lang: str = "ja"` フィールド追加
+    - `sidecar/services/calendar.py`: `PLANET_NAMES_EN`, `SIGN_NAMES_EN`, `ASPECT_NAMES_EN` 追加、`_labels(lang)` で言語切替
+    - `sidecar/data/cities.py`: 地方グループ + 都市名の英語ラベル対応（`get_grouped_cities(lang)` + `CityGroupLocalized`）
+  - 用語集英語化:
+    - `src/data/glossary.ts`: `GlossaryEntry` に `nameEn`, `summaryEn`, `descriptionEn` 追加、全46エントリに英語翻訳
+    - `src/components/GlossaryModal.tsx`: `i18n.language` に基づいて JA/EN 表示切替
+  - ドキュメント:
+    - `README.md` → `README.ja.md` にリネーム（日本語版）
+    - `README.md` 新規作成（英語版、フル内容）
+    - 両 README に「多言語対応」セクション追加
+  - `src/lib/api.ts`: `searchCity()` に `lang` パラメータ追加
+  - `src/lib/export.ts`: `exportPdf()` に `reportTitle` パラメータ追加
+  - `tsc --noEmit` + `vite build` 通過確認済み
+  - 日本語/英語切替の動作確認済み
+
+**Phase 4 全チェックリスト完了。**
 
 ---
 

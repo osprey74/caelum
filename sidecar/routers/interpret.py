@@ -7,19 +7,54 @@ from kerykeion import AstrologicalSubjectFactory, to_context
 
 from models.schemas import BirthData, TransitRequest, SynastryRequest, MonthlyCalendarRequest
 from data.cities import get_city
-from prompts.interpretation import SYSTEM_PROMPT
-from prompts.transit import TRANSIT_SYSTEM_PROMPT
-from prompts.synastry import SYNASTRY_SYSTEM_PROMPT
-from prompts.monthly import MONTHLY_SYSTEM_PROMPT
+from prompts.interpretation import get_system_prompt
+from prompts.transit import get_transit_prompt
+from prompts.synastry import get_synastry_prompt
+from prompts.monthly import get_monthly_prompt
 from services.settings import get_api_key
 from services.calendar import compute_monthly_calendar
 
 router = APIRouter()
 
 
+# --- i18n helpers ---
+
+_LABELS = {
+    "ja": {
+        "natal_chart": "ネイタルチャート（出生図）",
+        "transit_planets": "トランジット天体",
+        "transit_events": "のトランジットイベント",
+        "no_events": "（特筆すべきイベントなし）",
+        "paste_instruction": "以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。",
+        "system_prompt_label": "システムプロンプト",
+        "chart_data_label": "チャートデータ",
+        "date_fmt": lambda y, m, d: f"{y}年{m}月{d}日",
+        "month_fmt": lambda y, m: f"{y}年{m}月",
+        "event_fmt": lambda m, d, desc: f"- {m}月{d}日: {desc}",
+    },
+    "en": {
+        "natal_chart": "Natal Chart (Birth Chart)",
+        "transit_planets": "Transit Planets",
+        "transit_events": " Transit Events",
+        "no_events": "(No notable events)",
+        "paste_instruction": "Paste the following system prompt and chart data into your preferred AI.",
+        "system_prompt_label": "System Prompt",
+        "chart_data_label": "Chart Data",
+        "date_fmt": lambda y, m, d: f"{y}-{m:02d}-{d:02d}",
+        "month_fmt": lambda y, m: f"{y}-{m:02d}",
+        "event_fmt": lambda m, d, desc: f"- {m}/{d}: {desc}",
+    },
+}
+
+
+def _l(lang: str) -> dict:
+    return _LABELS.get(lang, _LABELS["ja"])
+
+
+# --- common helpers ---
+
 def _resolve_location(city: str, lat: float | None, lng: float | None,
                       timezone: str | None) -> tuple[float, float, str]:
-    """都市辞書 or リクエストから緯度経度タイムゾーンを解決。"""
     city_data = get_city(city)
     if city_data:
         return city_data["lat"], city_data["lng"], city_data["tz"]
@@ -27,7 +62,7 @@ def _resolve_location(city: str, lat: float | None, lng: float | None,
         return lat, lng, timezone
     raise HTTPException(
         status_code=400,
-        detail=f"都市 '{city}' は辞書に存在しません。lat/lng/timezone を指定してください。",
+        detail=f"City '{city}' not found. Please provide lat/lng/timezone.",
     )
 
 
@@ -42,7 +77,6 @@ def _build_subject(name: str, year: int, month: int, day: int,
 
 
 def _stream_response(system_prompt: str, user_content: str, api_key: str):
-    """Claude SSEストリーミングレスポンス生成。"""
     client = anthropic.Anthropic(api_key=api_key)
 
     def generate():
@@ -66,101 +100,50 @@ def _stream_response(system_prompt: str, user_content: str, api_key: str):
     )
 
 
+# --- Natal ---
+
 @router.post("/interpret")
 async def interpret_chart(data: BirthData):
     api_key = get_api_key()
     if not api_key:
-        raise HTTPException(status_code=400, detail="APIキーが設定されていません。")
+        raise HTTPException(status_code=400, detail="API key not configured.")
 
     lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
     subject = _build_subject(data.name, data.year, data.month, data.day,
                              data.hour, data.minute, lat, lng, tz_str, data.house_system)
     xml_context = to_context(subject)
-    return _stream_response(SYSTEM_PROMPT, xml_context, api_key)
-
-
-@router.post("/interpret-transit")
-async def interpret_transit(data: TransitRequest):
-    """トランジット解釈（ネイタル + トランジット天体のコンテキストを送信）。"""
-    api_key = get_api_key()
-    if not api_key:
-        raise HTTPException(status_code=400, detail="APIキーが設定されていません。")
-
-    lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
-    natal_subject = _build_subject(data.name, data.year, data.month, data.day,
-                                   data.hour, data.minute, lat, lng, tz_str, data.house_system)
-    transit_subject = _build_subject(
-        "Transit", data.transit_year, data.transit_month, data.transit_day,
-        data.transit_hour, data.transit_minute, lat, lng, tz_str, data.house_system,
-    )
-
-    natal_context = to_context(natal_subject)
-    transit_context = to_context(transit_subject)
-
-    user_content = f"""## ネイタルチャート（出生図）
-{natal_context}
-
-## トランジット天体（{data.transit_year}年{data.transit_month}月{data.transit_day}日）
-{transit_context}"""
-
-    return _stream_response(TRANSIT_SYSTEM_PROMPT, user_content, api_key)
-
-
-@router.post("/interpret-synastry")
-async def interpret_synastry(data: SynastryRequest):
-    """シナストリー解釈（2人のネイタルチャートのコンテキストを送信）。"""
-    api_key = get_api_key()
-    if not api_key:
-        raise HTTPException(status_code=400, detail="APIキーが設定されていません。")
-
-    lat1, lng1, tz1 = _resolve_location(data.city1, data.lat1, data.lng1, data.timezone1)
-    lat2, lng2, tz2 = _resolve_location(data.city2, data.lat2, data.lng2, data.timezone2)
-
-    subject1 = _build_subject(data.name1, data.year1, data.month1, data.day1,
-                              data.hour1, data.minute1, lat1, lng1, tz1, data.house_system)
-    subject2 = _build_subject(data.name2, data.year2, data.month2, data.day2,
-                              data.hour2, data.minute2, lat2, lng2, tz2, data.house_system)
-
-    context1 = to_context(subject1)
-    context2 = to_context(subject2)
-
-    user_content = f"""## {data.name1}のネイタルチャート（出生図）
-{context1}
-
-## {data.name2}のネイタルチャート（出生図）
-{context2}"""
-
-    return _stream_response(SYNASTRY_SYSTEM_PROMPT, user_content, api_key)
+    return _stream_response(get_system_prompt(data.lang), xml_context, api_key)
 
 
 @router.post("/generate-prompt")
 async def generate_prompt(data: BirthData):
-    """APIキー不要。チャートデータからプロンプトテキストを生成して返す。"""
     lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
     subject = _build_subject(data.name, data.year, data.month, data.day,
                              data.hour, data.minute, lat, lng, tz_str, data.house_system)
     xml_context = to_context(subject)
+    l = _l(data.lang)
+    sys_prompt = get_system_prompt(data.lang)
 
-    prompt_text = f"""以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。
-
----
-
-## システムプロンプト
-
-{SYSTEM_PROMPT}
+    prompt_text = f"""{l["paste_instruction"]}
 
 ---
 
-## チャートデータ
+## {l["system_prompt_label"]}
+
+{sys_prompt}
+
+---
+
+## {l["chart_data_label"]}
 
 {xml_context}"""
 
     return {"prompt": prompt_text}
 
 
-@router.post("/generate-prompt-transit")
-async def generate_prompt_transit(data: TransitRequest):
-    """APIキー不要。トランジット解釈用プロンプトを生成して返す。"""
+# --- Transit ---
+
+def _build_transit_content(data: TransitRequest) -> str:
     lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
     natal_subject = _build_subject(data.name, data.year, data.month, data.day,
                                    data.hour, data.minute, lat, lng, tz_str, data.house_system)
@@ -168,23 +151,41 @@ async def generate_prompt_transit(data: TransitRequest):
         "Transit", data.transit_year, data.transit_month, data.transit_day,
         data.transit_hour, data.transit_minute, lat, lng, tz_str, data.house_system,
     )
-
+    l = _l(data.lang)
     natal_context = to_context(natal_subject)
     transit_context = to_context(transit_subject)
+    date_str = l["date_fmt"](data.transit_year, data.transit_month, data.transit_day)
 
-    user_content = f"""## ネイタルチャート（出生図）
+    return f"""## {l["natal_chart"]}
 {natal_context}
 
-## トランジット天体（{data.transit_year}年{data.transit_month}月{data.transit_day}日）
+## {l["transit_planets"]}（{date_str}）
 {transit_context}"""
 
-    prompt_text = f"""以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。
+
+@router.post("/interpret-transit")
+async def interpret_transit(data: TransitRequest):
+    api_key = get_api_key()
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key not configured.")
+
+    user_content = _build_transit_content(data)
+    return _stream_response(get_transit_prompt(data.lang), user_content, api_key)
+
+
+@router.post("/generate-prompt-transit")
+async def generate_prompt_transit(data: TransitRequest):
+    user_content = _build_transit_content(data)
+    l = _l(data.lang)
+    sys_prompt = get_transit_prompt(data.lang)
+
+    prompt_text = f"""{l["paste_instruction"]}
 
 ---
 
-## システムプロンプト
+## {l["system_prompt_label"]}
 
-{TRANSIT_SYSTEM_PROMPT}
+{sys_prompt}
 
 ---
 
@@ -193,9 +194,9 @@ async def generate_prompt_transit(data: TransitRequest):
     return {"prompt": prompt_text}
 
 
-@router.post("/generate-prompt-synastry")
-async def generate_prompt_synastry(data: SynastryRequest):
-    """APIキー不要。シナストリー解釈用プロンプトを生成して返す。"""
+# --- Synastry ---
+
+def _build_synastry_content(data: SynastryRequest) -> str:
     lat1, lng1, tz1 = _resolve_location(data.city1, data.lat1, data.lng1, data.timezone1)
     lat2, lng2, tz2 = _resolve_location(data.city2, data.lat2, data.lng2, data.timezone2)
 
@@ -203,23 +204,40 @@ async def generate_prompt_synastry(data: SynastryRequest):
                               data.hour1, data.minute1, lat1, lng1, tz1, data.house_system)
     subject2 = _build_subject(data.name2, data.year2, data.month2, data.day2,
                               data.hour2, data.minute2, lat2, lng2, tz2, data.house_system)
-
+    l = _l(data.lang)
     context1 = to_context(subject1)
     context2 = to_context(subject2)
 
-    user_content = f"""## {data.name1}のネイタルチャート（出生図）
+    return f"""## {data.name1} — {l["natal_chart"]}
 {context1}
 
-## {data.name2}のネイタルチャート（出生図）
+## {data.name2} — {l["natal_chart"]}
 {context2}"""
 
-    prompt_text = f"""以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。
+
+@router.post("/interpret-synastry")
+async def interpret_synastry(data: SynastryRequest):
+    api_key = get_api_key()
+    if not api_key:
+        raise HTTPException(status_code=400, detail="API key not configured.")
+
+    user_content = _build_synastry_content(data)
+    return _stream_response(get_synastry_prompt(data.lang), user_content, api_key)
+
+
+@router.post("/generate-prompt-synastry")
+async def generate_prompt_synastry(data: SynastryRequest):
+    user_content = _build_synastry_content(data)
+    l = _l(data.lang)
+    sys_prompt = get_synastry_prompt(data.lang)
+
+    prompt_text = f"""{l["paste_instruction"]}
 
 ---
 
-## システムプロンプト
+## {l["system_prompt_label"]}
 
-{SYNASTRY_SYSTEM_PROMPT}
+{sys_prompt}
 
 ---
 
@@ -228,61 +246,63 @@ async def generate_prompt_synastry(data: SynastryRequest):
     return {"prompt": prompt_text}
 
 
+# --- Monthly ---
+
 def _build_monthly_context(data: MonthlyCalendarRequest) -> str:
-    """月間カレンダーのコンテキストテキストを構築。"""
     lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
     natal_subject = _build_subject(data.name, data.year, data.month, data.day,
                                    data.hour, data.minute, lat, lng, tz_str, data.house_system)
     natal_context = to_context(natal_subject)
+    l = _l(data.lang)
 
-    # カレンダーイベント計算
     cal = compute_monthly_calendar(
         data.name, data.year, data.month, data.day, data.hour, data.minute,
         lat, lng, tz_str, data.house_system,
         data.calendar_year, data.calendar_month,
+        lang=data.lang,
     )
 
-    # イベントをテキスト化
     event_lines: list[str] = []
     for day_data in cal["days"]:
         events = day_data["events"]
         if events:
             day_num = day_data["day"]
             for ev in events:
-                event_lines.append(f"- {data.calendar_month}月{day_num}日: {ev['description']}")
+                event_lines.append(l["event_fmt"](data.calendar_month, day_num, ev["description"]))
 
-    events_text = "\n".join(event_lines) if event_lines else "（特筆すべきイベントなし）"
+    events_text = "\n".join(event_lines) if event_lines else l["no_events"]
+    month_str = l["month_fmt"](data.calendar_year, data.calendar_month)
 
-    return f"""## ネイタルチャート（出生図）
+    return f"""## {l["natal_chart"]}
 {natal_context}
 
-## {data.calendar_year}年{data.calendar_month}月のトランジットイベント
+## {month_str}{l["transit_events"]}
 {events_text}"""
 
 
 @router.post("/interpret-monthly")
 async def interpret_monthly(data: MonthlyCalendarRequest):
-    """月間トランジット解釈（カレンダーイベント + ネイタルのコンテキストを送信）。"""
     api_key = get_api_key()
     if not api_key:
-        raise HTTPException(status_code=400, detail="APIキーが設定されていません。")
+        raise HTTPException(status_code=400, detail="API key not configured.")
 
     user_content = _build_monthly_context(data)
-    return _stream_response(MONTHLY_SYSTEM_PROMPT, user_content, api_key)
+    return _stream_response(get_monthly_prompt(data.lang), user_content, api_key)
 
 
 @router.post("/generate-prompt-monthly")
 async def generate_prompt_monthly(data: MonthlyCalendarRequest):
-    """APIキー不要。月間トランジット解釈用プロンプトを生成して返す。"""
     user_content = _build_monthly_context(data)
+    l = _l(data.lang)
+    sys_prompt = get_monthly_prompt(data.lang)
 
-    prompt_text = f"""以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。
+    prompt_text = f"""{l["paste_instruction"]}
 
 ---
 
-## システムプロンプト
+## {l["system_prompt_label"]}
 
-{MONTHLY_SYSTEM_PROMPT}
+{sys_prompt}
 
 ---
 
