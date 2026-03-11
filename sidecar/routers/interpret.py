@@ -5,12 +5,14 @@ from fastapi.responses import StreamingResponse
 import anthropic
 from kerykeion import AstrologicalSubjectFactory, to_context
 
-from models.schemas import BirthData, TransitRequest, SynastryRequest
+from models.schemas import BirthData, TransitRequest, SynastryRequest, MonthlyCalendarRequest
 from data.cities import get_city
 from prompts.interpretation import SYSTEM_PROMPT
 from prompts.transit import TRANSIT_SYSTEM_PROMPT
 from prompts.synastry import SYNASTRY_SYSTEM_PROMPT
+from prompts.monthly import MONTHLY_SYSTEM_PROMPT
 from services.settings import get_api_key
+from services.calendar import compute_monthly_calendar
 
 router = APIRouter()
 
@@ -218,6 +220,69 @@ async def generate_prompt_synastry(data: SynastryRequest):
 ## システムプロンプト
 
 {SYNASTRY_SYSTEM_PROMPT}
+
+---
+
+{user_content}"""
+
+    return {"prompt": prompt_text}
+
+
+def _build_monthly_context(data: MonthlyCalendarRequest) -> str:
+    """月間カレンダーのコンテキストテキストを構築。"""
+    lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
+    natal_subject = _build_subject(data.name, data.year, data.month, data.day,
+                                   data.hour, data.minute, lat, lng, tz_str, data.house_system)
+    natal_context = to_context(natal_subject)
+
+    # カレンダーイベント計算
+    cal = compute_monthly_calendar(
+        data.name, data.year, data.month, data.day, data.hour, data.minute,
+        lat, lng, tz_str, data.house_system,
+        data.calendar_year, data.calendar_month,
+    )
+
+    # イベントをテキスト化
+    event_lines: list[str] = []
+    for day_data in cal["days"]:
+        events = day_data["events"]
+        if events:
+            day_num = day_data["day"]
+            for ev in events:
+                event_lines.append(f"- {data.calendar_month}月{day_num}日: {ev['description']}")
+
+    events_text = "\n".join(event_lines) if event_lines else "（特筆すべきイベントなし）"
+
+    return f"""## ネイタルチャート（出生図）
+{natal_context}
+
+## {data.calendar_year}年{data.calendar_month}月のトランジットイベント
+{events_text}"""
+
+
+@router.post("/interpret-monthly")
+async def interpret_monthly(data: MonthlyCalendarRequest):
+    """月間トランジット解釈（カレンダーイベント + ネイタルのコンテキストを送信）。"""
+    api_key = get_api_key()
+    if not api_key:
+        raise HTTPException(status_code=400, detail="APIキーが設定されていません。")
+
+    user_content = _build_monthly_context(data)
+    return _stream_response(MONTHLY_SYSTEM_PROMPT, user_content, api_key)
+
+
+@router.post("/generate-prompt-monthly")
+async def generate_prompt_monthly(data: MonthlyCalendarRequest):
+    """APIキー不要。月間トランジット解釈用プロンプトを生成して返す。"""
+    user_content = _build_monthly_context(data)
+
+    prompt_text = f"""以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。
+
+---
+
+## システムプロンプト
+
+{MONTHLY_SYSTEM_PROMPT}
 
 ---
 

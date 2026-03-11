@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from kerykeion import AstrologicalSubjectFactory, ChartDataFactory
 
-from models.schemas import BirthData, TransitRequest, SynastryRequest
+from models.schemas import BirthData, TransitRequest, SynastryRequest, MonthlyCalendarRequest
 from data.cities import get_city, get_city_names, get_grouped_cities
+from services.calendar import compute_monthly_calendar
 
 router = APIRouter()
 
@@ -67,6 +68,17 @@ async def calculate_synastry(data: SynastryRequest):
 
     chart = ChartDataFactory.create_synastry_chart_data(subject1, subject2)
     return chart.model_dump()
+
+
+@router.post("/transit-calendar")
+async def transit_calendar(data: MonthlyCalendarRequest):
+    """月間トランジットカレンダー: 月相・イングレス・逆行・ネイタルアスペクトを検出。"""
+    lat, lng, tz_str = _resolve_coords(data.city, data.lat, data.lng, data.timezone)
+    return compute_monthly_calendar(
+        data.name, data.year, data.month, data.day, data.hour, data.minute,
+        lat, lng, tz_str, data.house_system,
+        data.calendar_year, data.calendar_month,
+    )
 
 
 @router.get("/cities")

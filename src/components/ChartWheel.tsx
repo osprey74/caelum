@@ -13,6 +13,7 @@ import {
   SIGN_COLORS,
   PlanetData,
 } from "../types/astrology";
+import type { GlossaryCategory } from "../data/glossary";
 
 const PLANET_NAMES_JA: Record<string, string> = {
   Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
@@ -26,10 +27,27 @@ export interface ChartWheelHandle {
   getSvgElement: () => SVGSVGElement | null;
 }
 
+export interface GlossaryClickEvent {
+  category: GlossaryCategory;
+  key: string;
+}
+
 interface Props {
   data: ChartResponse;
   transitData?: DualChartResponse | null;
   size?: number;
+  onGlossaryClick?: (event: GlossaryClickEvent) => void;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- D3 selection type helper
+type D3Sel = d3.Selection<any, unknown, null, undefined>;
+
+/** D3 の .on() overload を TS で安全に使うヘルパー */
+function bindClick(sel: D3Sel, handler?: () => void): D3Sel {
+  if (handler) {
+    return sel.attr("cursor", "pointer").on("click", handler);
+  }
+  return sel;
 }
 
 // ASC（第1ハウスカスプ）を左（9時方向）に固定するオフセットを計算
@@ -48,8 +66,10 @@ function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
   return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
 }
 
-const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ data, transitData, size = 600 }, ref) {
+const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ data, transitData, size = 600, onGlossaryClick }, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const glossaryCallbackRef = useRef(onGlossaryClick);
+  glossaryCallbackRef.current = onGlossaryClick;
 
   useImperativeHandle(ref, () => ({
     getSvgElement: () => svgRef.current,
@@ -57,7 +77,8 @@ const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ dat
 
   useEffect(() => {
     if (!svgRef.current || !data) return;
-    drawChart(svgRef.current, data, size, transitData ?? undefined);
+    const cb = (e: GlossaryClickEvent) => glossaryCallbackRef.current?.(e);
+    drawChart(svgRef.current, data, size, transitData ?? undefined, cb);
   }, [data, transitData, size]);
 
   return (
@@ -73,7 +94,7 @@ const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ dat
 
 export default ChartWheel;
 
-function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number, transitData?: DualChartResponse) {
+function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number, transitData?: DualChartResponse, onGlossary?: (e: GlossaryClickEvent) => void) {
   const sel = d3.select(svg);
   sel.selectAll("*").remove();
 
@@ -109,10 +130,10 @@ function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number, transi
   }
 
   // === Sign ring ===
-  drawSignRing(g, cx, cy, outerR, signR, offset);
+  drawSignRing(g, cx, cy, outerR, signR, offset, onGlossary);
 
   // === House ring ===
-  drawHouseLines(g, cx, cy, signR, innerR, subject, offset);
+  drawHouseLines(g, cx, cy, signR, innerR, subject, offset, onGlossary);
 
   // === Inner circle ===
   g.append("circle")
@@ -122,13 +143,13 @@ function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number, transi
   // === Aspect lines ===
   if (hasTransit) {
     // Transit mode: draw transit cross-aspects
-    drawAspects(g, cx, cy, innerR * 0.95, transitData.aspects, offset);
+    drawAspects(g, cx, cy, innerR * 0.95, transitData.aspects, offset, onGlossary);
   } else {
-    drawAspects(g, cx, cy, innerR * 0.95, data.aspects, offset);
+    drawAspects(g, cx, cy, innerR * 0.95, data.aspects, offset, onGlossary);
   }
 
   // === Natal Planets ===
-  drawPlanets(g, cx, cy, planetR, houseR, subject, offset);
+  drawPlanets(g, cx, cy, planetR, houseR, subject, offset, onGlossary);
 
   // === Transit Planets (outer ring) ===
   if (hasTransit) {
@@ -214,6 +235,7 @@ function drawSignRing(
   cx: number, cy: number,
   outerR: number, innerR: number,
   offset: number,
+  onGlossary?: (e: GlossaryClickEvent) => void,
 ) {
   const signs = ["Ari","Tau","Gem","Can","Leo","Vir","Lib","Sco","Sag","Cap","Aqu","Pis"];
 
@@ -230,19 +252,21 @@ function drawSignRing(
       .startAngle((-startAng + 90) * Math.PI / 180)
       .endAngle((-endAng + 90) * Math.PI / 180);
 
-    g.append("path")
+    const signKey = signs[i];
+    const sectorPath = g.append("path")
       .attr("d", arc as unknown as string)
       .attr("transform", `translate(${cx},${cy})`)
       .attr("fill", SIGN_COLORS[i])
       .attr("opacity", 0.15)
       .attr("stroke", "#445")
       .attr("stroke-width", 0.5);
+    bindClick(sectorPath, onGlossary ? () => onGlossary({ category: "sign", key: signKey }) : undefined);
 
     // Sign symbol
     const midAng = toAngle(startAbs + 15, offset);
     const labelR = (outerR + innerR) / 2;
     const pos = polarToXY(cx, cy, labelR, midAng);
-    g.append("text")
+    const signText = g.append("text")
       .attr("x", pos.x).attr("y", pos.y)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central")
@@ -250,6 +274,7 @@ function drawSignRing(
       .attr("font-size", outerR * 0.08)
       .attr("opacity", 0.8)
       .text(SIGN_SYMBOLS[signs[i]]);
+    bindClick(signText, onGlossary ? () => onGlossary({ category: "sign", key: signKey }) : undefined);
   }
 }
 
@@ -259,6 +284,7 @@ function drawHouseLines(
   outerR: number, innerR: number,
   subject: ChartResponse["subject"],
   offset: number,
+  onGlossary?: (e: GlossaryClickEvent) => void,
 ) {
   const houses = HOUSE_KEYS.map((k) => subject[k] as { abs_pos: number; name: string });
 
@@ -283,13 +309,15 @@ function drawHouseLines(
     const midAng = toAngle(midAbs, offset);
     const numR = (outerR + innerR) / 2;
     const numPos = polarToXY(cx, cy, numR, midAng);
-    g.append("text")
+    const houseNum = i + 1;
+    const houseText = g.append("text")
       .attr("x", numPos.x).attr("y", numPos.y)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central")
       .attr("fill", "#667")
       .attr("font-size", outerR * 0.05)
-      .text(i + 1);
+      .text(houseNum);
+    bindClick(houseText, onGlossary ? () => onGlossary({ category: "house", key: String(houseNum) }) : undefined);
   }
 }
 
@@ -299,6 +327,7 @@ function drawAspects(
   r: number,
   aspects: ChartResponse["aspects"],
   offset: number,
+  onGlossary?: (e: GlossaryClickEvent) => void,
 ) {
   // Only draw major aspects with tight orbs
   const majorAspects = aspects.filter(
@@ -319,12 +348,14 @@ function drawAspects(
       sextile: "セクスタイル (60°)",
       square: "スクエア (90°)",
     };
+    const aspectKey = a.aspect;
     const aspectLine = g.append("line")
       .attr("x1", p1.x).attr("y1", p1.y)
       .attr("x2", p2.x).attr("y2", p2.y)
       .attr("stroke", ASPECT_COLORS[a.aspect] || "#555")
-      .attr("stroke-width", 0.8)
+      .attr("stroke-width", onGlossary ? 2.5 : 0.8)
       .attr("opacity", opacity);
+    bindClick(aspectLine, onGlossary ? () => onGlossary({ category: "aspect", key: aspectKey }) : undefined);
     const p1ja = PLANET_NAMES_JA[a.p1_name] || a.p1_name;
     const p2ja = PLANET_NAMES_JA[a.p2_name] || a.p2_name;
     const aspectName = aspectNames[a.aspect] || a.aspect;
@@ -338,6 +369,7 @@ function drawPlanets(
   planetR: number, innerR: number,
   subject: ChartResponse["subject"],
   offset: number,
+  onGlossary?: (e: GlossaryClickEvent) => void,
 ) {
   const planets = PLANET_KEYS.map((k) => subject[k] as PlanetData);
   for (const k of OPTIONAL_PLANET_KEYS) {
@@ -387,6 +419,7 @@ function drawPlanets(
     const retroLabel = p.retrograde ? " (逆行中)" : "";
     const tooltip = `${planetName}  ${signName} ${deg}°${min.toString().padStart(2, "0")}'  ${houseNum ? `第${houseNum}ハウス` : ""}${retroLabel}`;
 
+    const pKey = p.name;
     const planetText = g.append("text")
       .attr("x", pos.x).attr("y", pos.y)
       .attr("text-anchor", "middle")
@@ -394,8 +427,8 @@ function drawPlanets(
       .attr("fill", "#e8e8f0")
       .attr("font-size", planetR * 0.1)
       .attr("font-weight", "bold")
-      .attr("cursor", "default")
       .text(symbol);
+    bindClick(planetText, onGlossary ? () => onGlossary({ category: "planet", key: pKey }) : undefined);
     planetText.append("title").text(tooltip);
 
     // Retrograde indicator

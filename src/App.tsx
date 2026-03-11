@@ -3,16 +3,19 @@ import { useSidecarReady } from "./hooks/useChart";
 import { fetchChart, fetchApiKeyStatus, fetchHouseSystem, BirthData } from "./lib/api";
 import BirthDataForm from "./components/BirthDataForm";
 import ProfileList from "./components/ProfileList";
-import ChartWheel, { ChartWheelHandle } from "./components/ChartWheel";
+import ChartWheel, { ChartWheelHandle, GlossaryClickEvent } from "./components/ChartWheel";
+import GlossaryModal from "./components/GlossaryModal";
+import { findGlossaryEntry, GlossaryEntry } from "./data/glossary";
 import PlanetTable from "./components/PlanetTable";
 import InterpretationPanel from "./components/InterpretationPanel";
 import TransitPanel from "./components/TransitPanel";
 import SynastryPanel from "./components/SynastryPanel";
+import CalendarPanel from "./components/CalendarPanel";
 import ExportButtons from "./components/ExportButtons";
 import ApiKeyDialog from "./components/ApiKeyDialog";
 import { ChartResponse, DualChartResponse } from "./types/astrology";
 
-type RightTab = "interpretation" | "transit" | "synastry";
+type RightTab = "interpretation" | "transit" | "synastry" | "calendar";
 
 function App() {
   const ready = useSidecarReady();
@@ -33,6 +36,12 @@ function App() {
   const [transitDate, setTransitDate] = useState("");
   const [person2Name, setPerson2Name] = useState("");
   const chartRef = useRef<ChartWheelHandle>(null);
+  const [glossaryEntry, setGlossaryEntry] = useState<GlossaryEntry | null>(null);
+
+  const handleGlossaryClick = useCallback((event: GlossaryClickEvent) => {
+    const entry = findGlossaryEntry(event.category, event.key);
+    if (entry) setGlossaryEntry(entry);
+  }, []);
 
   const handleNatalTextChange = useCallback((text: string) => {
     setNatalInterpText(text);
@@ -43,9 +52,14 @@ function App() {
   const handleSynastryTextChange = useCallback((text: string) => {
     setSynastryInterpText(text);
   }, []);
+  const [calendarInterpText, setCalendarInterpText] = useState("");
+  const handleCalendarTextChange = useCallback((text: string) => {
+    setCalendarInterpText(text);
+  }, []);
 
   const activeInterpText = rightTab === "transit" ? transitInterpText
     : rightTab === "synastry" ? synastryInterpText
+    : rightTab === "calendar" ? calendarInterpText
     : natalInterpText;
 
   const todayStamp = (() => {
@@ -61,6 +75,9 @@ function App() {
     }
     if (rightTab === "synastry" && person2Name) {
       return `${name}_シナストリー-${person2Name}_${todayStamp}`;
+    }
+    if (rightTab === "calendar") {
+      return `${name}_月間カレンダー_${todayStamp}`;
     }
     return `${name}_ネイタル解釈_${todayStamp}`;
   })();
@@ -103,7 +120,7 @@ function App() {
   }
 
   const tabBtnClass = (active: boolean) =>
-    `px-3 py-1.5 text-sm rounded-t transition-colors ${
+    `px-2 py-1.5 text-sm whitespace-nowrap rounded-t transition-colors ${
       active
         ? "bg-gray-800 text-gray-100 border-b-2 border-indigo-500"
         : "text-gray-500 hover:text-gray-300"
@@ -161,14 +178,14 @@ function App() {
 
           {chartData && !loading && (
             <div className="space-y-6">
-              <ChartWheel ref={chartRef} data={chartData} transitData={rightTab === "synastry" ? synastryData : transitData} size={540} />
+              <ChartWheel ref={chartRef} data={chartData} transitData={rightTab === "synastry" ? synastryData : transitData} size={540} onGlossaryClick={handleGlossaryClick} />
               <ExportButtons
                 chartRef={chartRef}
                 subjectName={chartData.subject.name}
                 fileBaseName={fileBaseName}
                 interpretationText={activeInterpText}
               />
-              <PlanetTable data={chartData} />
+              <PlanetTable data={chartData} onGlossaryClick={handleGlossaryClick} />
             </div>
           )}
 
@@ -194,6 +211,10 @@ function App() {
               className={tabBtnClass(rightTab === "synastry")}>
               シナストリー
             </button>
+            <button type="button" onClick={() => setRightTab("calendar")}
+              className={tabBtnClass(rightTab === "calendar")}>
+              月間カレンダー
+            </button>
           </div>
           <div className="flex-1 p-4 overflow-hidden">
             {rightTab === "interpretation" ? (
@@ -210,13 +231,19 @@ function App() {
                 onTextChange={handleTransitTextChange}
                 onTransitDateChange={setTransitDate}
               />
-            ) : (
+            ) : rightTab === "synastry" ? (
               <SynastryPanel
                 birthData={birthData}
                 hasApiKey={hasApiKey}
                 onSynastryData={setSynastryData}
                 onTextChange={handleSynastryTextChange}
                 onPerson2NameChange={setPerson2Name}
+              />
+            ) : (
+              <CalendarPanel
+                birthData={birthData}
+                hasApiKey={hasApiKey}
+                onTextChange={handleCalendarTextChange}
               />
             )}
           </div>
@@ -231,6 +258,14 @@ function App() {
           onClose={() => setShowSettings(false)}
           onUpdate={setHasApiKey}
           onHouseSystemChange={setHouseSystem}
+        />
+      )}
+
+      {/* Glossary Modal */}
+      {glossaryEntry && (
+        <GlossaryModal
+          entry={glossaryEntry}
+          onClose={() => setGlossaryEntry(null)}
         />
       )}
     </div>

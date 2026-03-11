@@ -173,6 +173,45 @@ export const HOUSE_SYSTEMS: Record<string, string> = {
   A: "等分ハウス (Equal)",
 };
 
+// --- 月間トランジットカレンダー ---
+
+export interface MonthlyCalendarRequest {
+  name: string;
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  city: string;
+  lat?: number;
+  lng?: number;
+  timezone?: string;
+  house_system?: string;
+  calendar_year: number;
+  calendar_month: number;
+}
+
+export interface CalendarEvent {
+  type: "new_moon" | "full_moon" | "ingress" | "retrograde" | "direct" | "natal_aspect";
+  planet: string;
+  description: string;
+  detail: string;
+}
+
+export interface CalendarDay {
+  day: number;
+  weekday: number; // 0=Mon ... 6=Sun
+  events: CalendarEvent[];
+}
+
+export interface MonthlyCalendarResponse {
+  year: number;
+  month: number;
+  num_days: number;
+  first_weekday: number;
+  days: CalendarDay[];
+}
+
 export const ASPECT_COLORS: Record<string, string> = {
   conjunction: "#FFD700",
   opposition: "#FF4444",

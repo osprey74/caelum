@@ -6,6 +6,7 @@ import {
   PLANET_SYMBOLS,
   PlanetData,
 } from "../types/astrology";
+import type { GlossaryClickEvent } from "./ChartWheel";
 
 const PLANET_NAMES_JA: Record<string, string> = {
   Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
@@ -17,6 +18,7 @@ const PLANET_NAMES_JA: Record<string, string> = {
 
 interface Props {
   data: ChartResponse;
+  onGlossaryClick?: (event: GlossaryClickEvent) => void;
 }
 
 function formatDeg(position: number): string {
@@ -30,7 +32,7 @@ function houseLabel(house: string | null): string {
   return house.replace("_House", "").replace("_", " ");
 }
 
-export default function PlanetTable({ data }: Props) {
+export default function PlanetTable({ data, onGlossaryClick }: Props) {
   const subject = data.subject;
   const planets: PlanetData[] = PLANET_KEYS.map((k) => subject[k] as PlanetData);
   for (const k of OPTIONAL_PLANET_KEYS) {
@@ -56,10 +58,22 @@ export default function PlanetTable({ data }: Props) {
           {planets.map((p) => (
             <tr key={p.name} className="border-b border-gray-800 hover:bg-gray-800/50">
               <td className="py-1.5 px-2">
-                <span className="mr-1.5">{PLANET_SYMBOLS[p.name] || ""}</span>
-                {PLANET_NAMES_JA[p.name] || p.name}
+                <span
+                  className={onGlossaryClick ? "cursor-pointer hover:text-indigo-300 transition-colors" : ""}
+                  onClick={onGlossaryClick ? () => onGlossaryClick({ category: "planet", key: p.name }) : undefined}
+                >
+                  <span className="mr-1.5">{PLANET_SYMBOLS[p.name] || ""}</span>
+                  {PLANET_NAMES_JA[p.name] || p.name}
+                </span>
               </td>
-              <td className="py-1.5 px-2">{SIGN_NAMES[p.sign] || p.sign}</td>
+              <td className="py-1.5 px-2">
+                <span
+                  className={onGlossaryClick ? "cursor-pointer hover:text-amber-300 transition-colors" : ""}
+                  onClick={onGlossaryClick ? () => onGlossaryClick({ category: "sign", key: p.sign }) : undefined}
+                >
+                  {SIGN_NAMES[p.sign] || p.sign}
+                </span>
+              </td>
               <td className="py-1.5 px-2 text-right font-mono">{formatDeg(p.position)}</td>
               <td className="py-1.5 px-2">{houseLabel(p.house)}</td>
               <td className="py-1.5 px-2 text-center">

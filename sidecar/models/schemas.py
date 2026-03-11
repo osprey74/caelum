@@ -79,6 +79,25 @@ class ProfileCreate(BaseModel):
     timezone: str | None = None
 
 
+class MonthlyCalendarRequest(BaseModel):
+    """月間トランジットカレンダーリクエスト。"""
+    # ネイタル出生データ
+    name: str
+    year: int
+    month: int
+    day: int
+    hour: int
+    minute: int
+    city: str
+    lat: float | None = None
+    lng: float | None = None
+    timezone: str | None = None
+    house_system: str = "P"
+    # カレンダー対象月
+    calendar_year: int
+    calendar_month: int  # 1-12
+
+
 class ProfileUpdate(BaseModel):
     """プロファイル更新リクエスト。全フィールド任意。"""
     name: str | None = None
