@@ -87,6 +87,29 @@ export interface TransitRequest {
   transit_minute?: number;
 }
 
+export interface SynastryRequest {
+  name1: string;
+  year1: number;
+  month1: number;
+  day1: number;
+  hour1: number;
+  minute1: number;
+  city1: string;
+  lat1?: number;
+  lng1?: number;
+  timezone1?: string;
+  name2: string;
+  year2: number;
+  month2: number;
+  day2: number;
+  hour2: number;
+  minute2: number;
+  city2: string;
+  lat2?: number;
+  lng2?: number;
+  timezone2?: string;
+}
+
 export interface Profile {
   id: string;
   name: string;

@@ -7,11 +7,12 @@ import ChartWheel, { ChartWheelHandle } from "./components/ChartWheel";
 import PlanetTable from "./components/PlanetTable";
 import InterpretationPanel from "./components/InterpretationPanel";
 import TransitPanel from "./components/TransitPanel";
+import SynastryPanel from "./components/SynastryPanel";
 import ExportButtons from "./components/ExportButtons";
 import ApiKeyDialog from "./components/ApiKeyDialog";
 import { ChartResponse, DualChartResponse } from "./types/astrology";
 
-type RightTab = "interpretation" | "transit";
+type RightTab = "interpretation" | "transit" | "synastry";
 
 function App() {
   const ready = useSidecarReady();
@@ -22,14 +23,27 @@ function App() {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [formInitialData, setFormInitialData] = useState<BirthData | null>(null);
-  const [interpretationText, setInterpretationText] = useState("");
+  const [natalInterpText, setNatalInterpText] = useState("");
+  const [transitInterpText, setTransitInterpText] = useState("");
+  const [synastryInterpText, setSynastryInterpText] = useState("");
   const [transitData, setTransitData] = useState<DualChartResponse | null>(null);
+  const [synastryData, setSynastryData] = useState<DualChartResponse | null>(null);
   const [rightTab, setRightTab] = useState<RightTab>("interpretation");
   const chartRef = useRef<ChartWheelHandle>(null);
 
-  const handleInterpretationTextChange = useCallback((text: string) => {
-    setInterpretationText(text);
+  const handleNatalTextChange = useCallback((text: string) => {
+    setNatalInterpText(text);
   }, []);
+  const handleTransitTextChange = useCallback((text: string) => {
+    setTransitInterpText(text);
+  }, []);
+  const handleSynastryTextChange = useCallback((text: string) => {
+    setSynastryInterpText(text);
+  }, []);
+
+  const activeInterpText = rightTab === "transit" ? transitInterpText
+    : rightTab === "synastry" ? synastryInterpText
+    : natalInterpText;
 
   useEffect(() => {
     if (ready) {
@@ -125,11 +139,11 @@ function App() {
 
           {chartData && !loading && (
             <div className="space-y-6">
-              <ChartWheel ref={chartRef} data={chartData} transitData={transitData} size={540} />
+              <ChartWheel ref={chartRef} data={chartData} transitData={rightTab === "synastry" ? synastryData : transitData} size={540} />
               <ExportButtons
                 chartRef={chartRef}
                 subjectName={chartData.subject.name}
-                interpretationText={interpretationText}
+                interpretationText={activeInterpText}
               />
               <PlanetTable data={chartData} />
             </div>
@@ -153,19 +167,31 @@ function App() {
               className={tabBtnClass(rightTab === "transit")}>
               トランジット
             </button>
+            <button type="button" onClick={() => setRightTab("synastry")}
+              className={tabBtnClass(rightTab === "synastry")}>
+              シナストリー
+            </button>
           </div>
           <div className="flex-1 p-4 overflow-hidden">
             {rightTab === "interpretation" ? (
               <InterpretationPanel
                 birthData={birthData}
                 hasApiKey={hasApiKey}
-                onTextChange={handleInterpretationTextChange}
+                onTextChange={handleNatalTextChange}
               />
-            ) : (
+            ) : rightTab === "transit" ? (
               <TransitPanel
                 birthData={birthData}
                 hasApiKey={hasApiKey}
                 onTransitData={setTransitData}
+                onTextChange={handleTransitTextChange}
+              />
+            ) : (
+              <SynastryPanel
+                birthData={birthData}
+                hasApiKey={hasApiKey}
+                onSynastryData={setSynastryData}
+                onTextChange={handleSynastryTextChange}
               />
             )}
           </div>

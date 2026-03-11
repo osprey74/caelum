@@ -2,7 +2,7 @@
 
 **作成日**: 2026-03-09
 **最終更新**: 2026-03-11
-**ステータス**: Phase 2 進行中
+**ステータス**: Phase 3 進行中
 **引き継ぎ先**: Claude Code
 
 ---
@@ -760,9 +760,9 @@ cd sidecar && pip install -r requirements.txt
 [x] 3-1: ChartWheel 二重円描画（ネイタル内円 + トランジット外円）            ← 2026-03-11
 [x] 3-1: POST /interpret-transit トランジット解釈エンドポイント              ← 2026-03-11
 [x] 3-2: バックエンド POST /synastry エンドポイント                          ← 2026-03-11
-[ ] 3-2: フロントエンド 2人分入力フォーム + シナストリーUI
-[ ] 3-2: ChartWheel シナストリー二重円描画
-[ ] 3-2: POST /interpret-synastry シナストリー解釈エンドポイント
+[x] 3-2: フロントエンド 2人分入力フォーム + シナストリーUI                    ← 2026-03-11
+[x] 3-2: ChartWheel シナストリー二重円描画                                    ← 2026-03-11
+[x] 3-2: POST /interpret-synastry シナストリー解釈エンドポイント              ← 2026-03-11
 [ ] 3-3: キロン・リリス等の追加天体表示（型定義・ChartWheel・PlanetTable）
 [ ] 3-4: ハウスシステム選択UI（設定画面）
 [ ] 3-4: バックエンド houses_system パラメータ対応
@@ -941,6 +941,34 @@ cd sidecar && pip install -r requirements.txt
   - `public/fonts/NotoSansJP-Regular.ttf`: Noto Sans JP フォント（5MB TTF）をバンドル
   - `src/lib/export.ts`: PDF生成時にフォントを fetch → base64変換 → jsPDF に登録（初回読み込み後キャッシュ）
   - タイトルも日本語化（`ネイタルチャートレポート — {名前}`）
+
+### 2026-03-11（第5セッション — Phase 3-2 シナストリーチャート）
+
+**完了した作業:**
+- **Phase 3-2: シナストリーチャート（2人の相性）**
+  - バックエンド:
+    - `sidecar/prompts/synastry.py`: シナストリー解釈用システムプロンプト新規作成（関係性概観・太陽月・金星火星・コミュニケーション・注目アスペクト・まとめ）
+    - `sidecar/routers/interpret.py`: `POST /interpret-synastry` SSEエンドポイント追加（2人分のコンテキスト生成）
+  - フロントエンド:
+    - `src/types/astrology.ts`: `SynastryRequest` インターフェース追加
+    - `src/lib/api.ts`: `fetchSynastry()`, `streamSynastryInterpretation()` 関数追加
+    - `src/components/SynastryPanel.tsx`: 新規コンポーネント（プロファイル選択で2人目を指定、計算・解釈・アコーディオン折りたたみ、ピンク系アクセントカラー）
+    - `src/App.tsx`: 右サイドバーに「シナストリー」タブ追加（3タブ構成: ネイタル解釈/トランジット/シナストリー）、タブ切替でChartWheelの二重円データを切り替え
+  - ChartWheelは既存の二重円描画ロジック（`transitData` prop）をそのまま活用
+  - `tsc --noEmit` + `vite build` 通過確認済み
+  - 動作確認済み: シナストリー計算（二重円表示）、AI解釈ストリーミング共に正常動作
+
+- **バグ修正: トランジット/シナストリーのPDFエクスポートに解釈テキストが含まれない**
+  - 原因: `App.tsx` の `interpretationText` がネイタル解釈のみを保持しており、トランジット/シナストリーのテキストが未連携
+  - 修正:
+    - `src/App.tsx`: 単一 `interpretationText` → `natalInterpText` / `transitInterpText` / `synastryInterpText` の3状態に分離、`activeInterpText` をタブに応じて切替
+    - `src/components/TransitPanel.tsx`: `onTextChange` prop + useEffect でテキスト変更を親に通知
+    - `src/components/SynastryPanel.tsx`: 同上
+    - `ExportButtons` に渡すテキストを `activeInterpText` に変更
+
+- **UX改善: エクスポート完了通知トースト**
+  - `src/components/ExportButtons.tsx`: SVG/PNG/PDFエクスポート完了時に緑色のトースト通知を表示（2.5秒で自動消去、フェードイン/アウトアニメーション付き）
+  - `tailwind.config.js`: `fade-in-out` カスタムアニメーション追加
 
 ---
 

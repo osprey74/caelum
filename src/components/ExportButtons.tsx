@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { exportSvg, exportPng, exportPdf } from "../lib/export";
 import type { ChartWheelHandle } from "./ChartWheel";
 
@@ -10,6 +10,13 @@ interface Props {
 
 export default function ExportButtons({ chartRef, subjectName, interpretationText }: Props) {
   const [exporting, setExporting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   function getSvg(): SVGSVGElement | null {
     return chartRef.current?.getSvgElement() ?? null;
@@ -20,6 +27,7 @@ export default function ExportButtons({ chartRef, subjectName, interpretationTex
     if (!svg) return;
     const filename = `${subjectName || "chart"}_natal.svg`;
     exportSvg(svg, filename);
+    setToast("SVGをエクスポートしました");
   }
 
   async function handlePng() {
@@ -29,6 +37,7 @@ export default function ExportButtons({ chartRef, subjectName, interpretationTex
     try {
       const filename = `${subjectName || "chart"}_natal.png`;
       await exportPng(svg, filename);
+      setToast("PNGをエクスポートしました");
     } finally {
       setExporting(false);
     }
@@ -41,6 +50,7 @@ export default function ExportButtons({ chartRef, subjectName, interpretationTex
     try {
       const filename = `${subjectName || "chart"}_report.pdf`;
       await exportPdf(svg, subjectName, interpretationText, filename);
+      setToast("PDFをエクスポートしました");
     } finally {
       setExporting(false);
     }
@@ -50,7 +60,7 @@ export default function ExportButtons({ chartRef, subjectName, interpretationTex
     "rounded bg-gray-700 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors";
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="relative flex gap-2 items-center">
       <span className="text-xs text-gray-500">エクスポート:</span>
       <button type="button" onClick={handleSvg} disabled={exporting} className={btnClass}>
         SVG
@@ -61,6 +71,11 @@ export default function ExportButtons({ chartRef, subjectName, interpretationTex
       <button type="button" onClick={handlePdf} disabled={exporting} className={btnClass}>
         PDF
       </button>
+      {toast && (
+        <div className="absolute left-0 -top-10 bg-green-800/90 border border-green-600 text-green-100 text-sm px-3 py-1.5 rounded shadow-lg animate-fade-in-out whitespace-nowrap">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

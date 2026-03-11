@@ -5,10 +5,11 @@ from fastapi.responses import StreamingResponse
 import anthropic
 from kerykeion import AstrologicalSubjectFactory, to_context
 
-from models.schemas import BirthData, TransitRequest
+from models.schemas import BirthData, TransitRequest, SynastryRequest
 from data.cities import get_city
 from prompts.interpretation import SYSTEM_PROMPT
 from prompts.transit import TRANSIT_SYSTEM_PROMPT
+from prompts.synastry import SYNASTRY_SYSTEM_PROMPT
 from services.settings import get_api_key
 
 router = APIRouter()
@@ -99,6 +100,33 @@ async def interpret_transit(data: TransitRequest):
 {transit_context}"""
 
     return _stream_response(TRANSIT_SYSTEM_PROMPT, user_content, api_key)
+
+
+@router.post("/interpret-synastry")
+async def interpret_synastry(data: SynastryRequest):
+    """シナストリー解釈（2人のネイタルチャートのコンテキストを送信）。"""
+    api_key = get_api_key()
+    if not api_key:
+        raise HTTPException(status_code=400, detail="APIキーが設定されていません。")
+
+    lat1, lng1, tz1 = _resolve_location(data.city1, data.lat1, data.lng1, data.timezone1)
+    lat2, lng2, tz2 = _resolve_location(data.city2, data.lat2, data.lng2, data.timezone2)
+
+    subject1 = _build_subject(data.name1, data.year1, data.month1, data.day1,
+                              data.hour1, data.minute1, lat1, lng1, tz1)
+    subject2 = _build_subject(data.name2, data.year2, data.month2, data.day2,
+                              data.hour2, data.minute2, lat2, lng2, tz2)
+
+    context1 = to_context(subject1)
+    context2 = to_context(subject2)
+
+    user_content = f"""## {data.name1}のネイタルチャート（出生図）
+{context1}
+
+## {data.name2}のネイタルチャート（出生図）
+{context2}"""
+
+    return _stream_response(SYNASTRY_SYSTEM_PROMPT, user_content, api_key)
 
 
 @router.post("/generate-prompt")

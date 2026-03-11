@@ -25,7 +25,7 @@ export async function fetchChart(data: BirthData) {
 
 // --- トランジット / シナストリー ---
 
-import type { TransitRequest, DualChartResponse } from "../types/astrology";
+import type { TransitRequest, SynastryRequest, DualChartResponse } from "../types/astrology";
 
 export async function fetchTransit(data: TransitRequest): Promise<DualChartResponse> {
   const res = await fetch(`${SIDECAR_URL}/transit`, {
@@ -45,6 +45,56 @@ export function streamTransitInterpretation(
   const controller = new AbortController();
 
   fetch(`${SIDECAR_URL}/interpret-transit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    signal: controller.signal,
+  }).then(async (res) => {
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const lines = decoder.decode(value).split("\n");
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const payload = line.slice(6);
+          if (payload === "[DONE]") {
+            onDone();
+            return;
+          }
+          try {
+            const { text } = JSON.parse(payload);
+            onText(text);
+          } catch {
+            // incomplete SSE chunk
+          }
+        }
+      }
+    }
+  });
+
+  return () => controller.abort();
+}
+
+export async function fetchSynastry(data: SynastryRequest): Promise<DualChartResponse> {
+  const res = await fetch(`${SIDECAR_URL}/synastry`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export function streamSynastryInterpretation(
+  data: SynastryRequest,
+  onText: (text: string) => void,
+  onDone: () => void,
+): () => void {
+  const controller = new AbortController();
+
+  fetch(`${SIDECAR_URL}/interpret-synastry`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
