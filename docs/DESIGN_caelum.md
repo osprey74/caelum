@@ -1,25 +1,27 @@
 # Liber Caeli 構成設計書
 
-> 作成日: 2026-03-09  
-> ステータス: 設計フェーズ（確定）  
-> リポジトリ名: `caelum`  
-> アプリ表示名: **Liber Caeli**（リベル・カエリ）  
+> 作成日: 2026-03-09
+> 最終更新: 2026-03-11
+> ステータス: Phase 4 全完了（実装済み）
+> リポジトリ名: `caelum`
+> アプリ表示名: **Liber Caeli**（リベル・カエリ）
 > 意味: ラテン語「天空の書」
+> バージョン: 1.0.2
 
 ---
 
 ## 1. プロジェクト概要
 
 ### コンセプト
-西洋占星術のネイタルチャートを計算・描画し、Claude APIによるAI解釈テキストを生成する個人利用デスクトップアプリ。
+西洋占星術のネイタルチャートを計算・描画し、Claude APIによるAI解釈テキストを生成する個人利用デスクトップアプリ。トランジット（二重円）、シナストリー（相性）、月間カレンダー、用語集、多言語対応（日本語/英語）を備える。
 
 ### 採用流派・レイヤー設定
 
 | レイヤー | 選択 | 備考 |
 |---|---|---|
-| L1 黄道 | 熱帯（Tropical） | 日本語情報と一致 |
-| L1 ハウス | プラシダス | astro.com標準 |
-| L2 天体 | 10天体 + ASC/MC | キロン等は将来拡張 |
+| L1 黄道 | 熱帯（Tropical） | 変更禁止 |
+| L1 ハウス | ユーザー選択可能 | プラシダス（既定）/ ホールサイン / 等分ハウス |
+| L2 天体 | 13天体 + ASC/MC | 10惑星 + キロン・リリス・フォルテュナ |
 | L3 アスペクト | 主要5 + セミスクエア・クインカンクス | モダン準拠 |
 | L4 解釈軸 | モダン西洋（性格・傾向軸） | 初心者向け自己理解フレーム |
 
@@ -31,83 +33,123 @@
 | 技術 | バージョン | 用途 |
 |---|---|---|
 | Tauri | v2 | デスクトップシェル |
-| React | 18+ | UIフレームワーク |
-| TypeScript | 5+ | 型安全 |
-| Tailwind CSS | 3+ | スタイリング |
-| D3.js | 7+ | チャートSVG描画 |
-| Material Symbols Rounded | - | アイコン（kazahana準拠） |
+| React | 19 | UIフレームワーク |
+| TypeScript | 5.8 | 型安全 |
+| Tailwind CSS | 3.4 | スタイリング |
+| D3.js | 7.9 | チャートSVG描画 |
+| i18next + react-i18next | 25 / 16 | 国際化（日本語/英語） |
+| react-markdown | 10 | AI解釈テキストのMarkdownレンダリング |
+| jsPDF | 4.2 | PDFレポート生成 |
 
 ### バックエンド（Python サイドカー）
 | 技術 | バージョン | 用途 |
 |---|---|---|
 | Python | 3.10+ | サイドカー実行環境 |
-| kerykeion | 最新 | 天体計算エンジン（Swiss Ephemeris内包）|
-| FastAPI | 最新 | サイドカーHTTPサーバー |
-| uvicorn | 最新 | ASGIサーバー（開発時） |
-| PyInstaller | 最新 | サイドカーのシングルバイナリ化（リリース時） |
+| FastAPI | 0.135 | HTTPサーバー |
+| uvicorn | 0.41 | ASGIサーバー |
+| kerykeion | 5.11 | 天体計算エンジン（Swiss Ephemeris内包）|
+| anthropic SDK | 0.84 | Claude API呼び出し |
+| timezonefinder | 8.2 | 緯度経度からタイムゾーン推定 |
+| PyInstaller | 6.19 | シングルバイナリ化（リリース時） |
 
 ### 位置情報
 | 方式 | 内容 |
 |---|---|
-| **`online=False`** | GeoNames API不使用・完全オフライン動作 |
-| **都市辞書内蔵** | `sidecar/data/cities.py` に日本全国65都市＋海外17都市を地方別グループで収録 |
-| **手動入力（常時表示）** | 辞書にない都市は緯度・経度・タイムゾーンを直接入力（ドロップダウン下に常時表示） |
+| **`online=False`** | GeoNames API不使用・完全オフライン計算 |
+| **都市辞書内蔵** | 日本全国65都市＋海外17都市を地方別グループで収録（多言語ラベル対応） |
+| **Nominatim API検索** | 任意の地名を OpenStreetMap Nominatim で検索・緯度経度取得 |
+| **手動入力** | 辞書にない都市は緯度・経度・タイムゾーンを直接入力 |
 
 ### AI
 | 技術 | 用途 |
 |---|---|
-| Claude API（claude-sonnet-4-6） | Layer 4 解釈テキスト生成 |
+| Claude API（claude-sonnet-4-6） | 解釈テキスト生成（ネイタル・トランジット・シナストリー・月間フォーカス） |
+| SSE（Server-Sent Events） | ストリーミングレスポンス |
+| max_tokens: 8192 | 出力上限 |
 
 ---
 
 ## 3. アーキテクチャ概要
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  Tauri Shell（Rust）                                     │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │  React + TypeScript（WebView）                    │  │
-│  │                                                   │  │
-│  │  ┌─────────────────┐   ┌───────────────────────┐  │  │
-│  │  │  ChartView       │   │  InterpretationView   │  │  │
-│  │  │  D3.js SVG描画   │   │  AIテキスト表示       │  │  │
-│  │  └────────┬────────┘   └──────────┬────────────┘  │  │
-│  │           │                       │               │  │
-│  │  ┌────────▼───────────────────────▼────────────┐  │  │
-│  │  │  API Client（TypeScript）                   │  │  │
-│  │  │  localhost:8765 へ fetch                    │  │  │
-│  │  └────────────────────────────────────────────┘  │  │
-│  └───────────────────────────────────────────────────┘  │
-│                                                          │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │  Python Sidecar（FastAPI + uvicorn :8765）        │  │
-│  │                                                   │  │
-│  │  POST /chart            kerykeion計算 → JSON      │  │
-│  │  POST /interpret        Claude API → SSE          │  │
-│  │  POST /generate-prompt  プロンプト生成(API不要)    │  │
-│  │  /settings/*            APIキー管理               │  │
-│  └───────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  Tauri Shell（Rust）                                             │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  React + TypeScript + i18next（WebView）                  │  │
+│  │                                                           │  │
+│  │  ┌──────────────┐ ┌────────────────┐ ┌────────────────┐  │  │
+│  │  │ ChartWheel   │ │ PlanetTable    │ │ GlossaryModal  │  │  │
+│  │  │ D3.js SVG    │ │ 天体配置表     │ │ 用語集ポップ   │  │  │
+│  │  │ 二重円対応   │ │                │ │ アップ         │  │  │
+│  │  └──────┬───────┘ └───────┬────────┘ └────────────────┘  │  │
+│  │  ┌──────┴─────────────────┴────────────────────────────┐  │  │
+│  │  │ Interpretation / Transit / Synastry / Calendar Panel │  │  │
+│  │  │ AI解釈テキスト表示（Markdownレンダリング・折りたたみ） │  │  │
+│  │  └──────┬──────────────────────────────────────────────┘  │  │
+│  │  ┌──────▼──────────────────────────────────────────────┐  │  │
+│  │  │  API Client（src/lib/api.ts）                       │  │  │
+│  │  │  localhost:8765 へ fetch                            │  │  │
+│  │  └────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Python Sidecar（FastAPI + uvicorn :8765）                │  │
+│  │                                                           │  │
+│  │  POST /chart              ネイタルチャート計算             │  │
+│  │  POST /transit            トランジット計算                │  │
+│  │  POST /synastry           シナストリー計算                │  │
+│  │  POST /transit-calendar   月間カレンダー計算              │  │
+│  │  GET  /cities             都市辞書（多言語対応）          │  │
+│  │  GET  /geocode            Nominatim 都市名検索            │  │
+│  │  POST /interpret          ネイタル AI解釈（SSE）          │  │
+│  │  POST /interpret-transit  トランジット AI解釈（SSE）      │  │
+│  │  POST /interpret-synastry シナストリー AI解釈（SSE）      │  │
+│  │  POST /interpret-monthly  月間フォーカス AI解釈（SSE）    │  │
+│  │  POST /generate-prompt*   プロンプト生成（API不要）×4     │  │
+│  │  /profiles/*              プロファイルCRUD                │  │
+│  │  /settings/*              APIキー・ハウスシステム管理     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### データフロー
+
+#### ネイタルチャート生成
 ```
-ユーザー入力（生年月日時・出生地）
+ユーザー入力（名前・生年月日時・出生地・ハウスシステム・言語）
     │
     ▼
-POST /chart
-    │  kerykeion で計算
+POST /chart（lang パラメータ付き）
+    │  kerykeion で計算（online=False）
     ▼
 チャートデータ JSON
-    │  D3.jsで描画（フロント）
-    │  + Claude APIへ送信（バック）
+    │  D3.js で描画（ChartWheel.tsx）
+    │  PlanetTable で一覧表示
     ▼
-POST /interpret
-    │  kerykeionの to_context() でXML生成
+POST /interpret または /generate-prompt（lang パラメータ付き）
+    │  kerykeion の to_context() で XML 生成
+    │  get_system_prompt(lang) で言語別プロンプト選択
     │  Claude API（claude-sonnet-4-6）へ投げる
     │  Server-Sent Events でストリーミング返却
     ▼
-解釈テキスト（ストリーミング表示）
+解釈テキスト（ストリーミング表示、Markdown レンダリング、セクション折りたたみ）
+```
+
+#### トランジット / シナストリー / 月間カレンダー
+```
+ネイタルデータ + トランジット日付 / 2人目プロファイル / 対象月
+    │
+    ▼
+POST /transit | /synastry | /transit-calendar
+    │  kerykeion で二重計算
+    ▼
+二重チャートデータ | カレンダーイベントデータ
+    │  ChartWheel 二重円描画 | CalendarPanel グリッド表示
+    ▼
+POST /interpret-transit | /interpret-synastry | /interpret-monthly
+    │  言語別プロンプト + コンテキスト → Claude API（SSE）
+    ▼
+AI 解釈テキスト
 ```
 
 ---
@@ -116,225 +158,158 @@ POST /interpret
 
 ```
 caelum/
-├── src/                          # Reactフロントエンド
+├── src/                              # React フロントエンド
 │   ├── components/
-│   │   ├── ChartWheel.tsx        # D3.js ネイタルチャート円盤
-│   │   ├── PlanetTable.tsx       # 天体配置一覧表
-│   │   ├── InterpretationPanel.tsx # AI解釈/プロンプト生成パネル
-│   │   ├── BirthDataForm.tsx     # 入力フォーム（地方グループ付き都市選択＋緯度経度直接入力）
-│   │   ├── ApiKeyDialog.tsx      # APIキー設定ダイアログ
-│   │   └── ui/                   # 共通UIコンポーネント
+│   │   ├── ChartWheel.tsx            # D3.js チャート円盤（ネイタル・二重円対応）
+│   │   ├── PlanetTable.tsx           # 天体配置一覧表（i18n 対応）
+│   │   ├── InterpretationPanel.tsx   # AI 解釈パネル（Markdown・折りたたみ）
+│   │   ├── TransitPanel.tsx          # トランジット解釈パネル
+│   │   ├── SynastryPanel.tsx         # シナストリー解釈パネル
+│   │   ├── CalendarPanel.tsx         # 月間カレンダーパネル
+│   │   ├── BirthDataForm.tsx         # 入力フォーム（辞書選択・検索・手動入力）
+│   │   ├── ProfileList.tsx           # プロファイル管理
+│   │   ├── ExportButtons.tsx         # SVG/PNG/PDF エクスポート
+│   │   ├── ApiKeyDialog.tsx          # 設定ダイアログ（APIキー・ハウスシステム・言語）
+│   │   └── GlossaryModal.tsx         # 用語集モーダル（多言語対応）
 │   ├── hooks/
-│   │   ├── useChart.ts           # チャートデータ取得
-│   │   └── useInterpretation.ts  # AI解釈SSE受信
+│   │   └── useChart.ts               # サイドカー起動待機フック
 │   ├── types/
-│   │   └── astrology.ts          # 型定義
+│   │   └── astrology.ts              # 型定義・定数（天体・サイン・ハウス・アスペクト）
 │   ├── lib/
-│   │   └── api.ts                # サイドカーAPIクライアント
-│   ├── App.tsx
-│   └── main.tsx
-│
-├── sidecar/                      # Pythonサイドカー
-│   ├── main.py                   # FastAPIエントリポイント
-│   ├── routers/
-│   │   ├── chart.py              # /chart, /cities エンドポイント
-│   │   ├── interpret.py          # /interpret, /generate-prompt エンドポイント
-│   │   └── settings.py           # /settings/* APIキー管理エンドポイント
-│   ├── services/
-│   │   ├── kerykeion_service.py  # kerykeion ラッパー
-│   │   ├── claude_service.py     # Claude API ラッパー
-│   │   └── settings.py           # APIキー永続化（config.json/.env）
-│   ├── models/
-│   │   └── schemas.py            # Pydantic スキーマ
-│   ├── prompts/
-│   │   └── interpretation.py     # プロンプトテンプレート
+│   │   ├── api.ts                    # サイドカー API クライアント（全エンドポイント）
+│   │   └── export.ts                 # SVG/PNG/PDF エクスポートユーティリティ
 │   ├── data/
-│   │   └── cities.py             # 主要都市辞書（緯度・経度・TZ）
+│   │   └── glossary.ts               # 用語辞書データ（JA/EN 46 エントリ）
+│   ├── i18n/
+│   │   ├── index.ts                  # i18next 初期化（localStorage 永続化）
+│   │   └── locales/
+│   │       ├── ja.json               # 日本語翻訳
+│   │       └── en.json               # 英語翻訳
+│   ├── styles.css                    # グローバルCSS（WebView2対応含む）
+│   ├── App.tsx                       # メインレイアウト（3カラム + タブ切替）
+│   └── main.tsx                      # エントリポイント（i18n import）
+│
+├── sidecar/                          # Python サイドカー
+│   ├── main.py                       # FastAPI エントリポイント（5ルーター登録）
+│   ├── routers/
+│   │   ├── chart.py                  # /chart, /transit, /synastry, /transit-calendar, /cities
+│   │   ├── interpret.py              # /interpret*, /generate-prompt*（4種 × 2 = 8エンドポイント）
+│   │   ├── geocode.py                # /geocode（Nominatim + ローカル辞書検索）
+│   │   ├── profiles.py               # /profiles CRUD（5エンドポイント）
+│   │   └── settings.py               # /settings/* APIキー・ハウスシステム（5エンドポイント）
+│   ├── services/
+│   │   ├── calendar.py               # 月間トランジット計算（イベント検出ロジック）
+│   │   ├── profiles.py               # プロファイル永続化（JSON）
+│   │   └── settings.py               # 設定永続化（APIキー・ハウスシステム）
+│   ├── models/
+│   │   └── schemas.py                # Pydantic スキーマ（全て lang フィールド付き）
+│   ├── prompts/
+│   │   ├── interpretation.py         # ネイタル解釈プロンプト（JA/EN）
+│   │   ├── transit.py                # トランジット解釈プロンプト（JA/EN）
+│   │   ├── synastry.py               # シナストリー解釈プロンプト（JA/EN）
+│   │   └── monthly.py                # 月間フォーカスプロンプト（JA/EN）
+│   ├── data/
+│   │   └── cities.py                 # 都市辞書（65+17都市、地方グループ、多言語ラベル）
 │   └── requirements.txt
 │
-├── src-tauri/                    # Tauri設定（Rust）
+├── src-tauri/                        # Tauri 設定（Rust）
 │   ├── src/
-│   │   └── main.rs               # サイドカー起動処理
-│   ├── binaries/                 # PyInstallerビルド済みバイナリ配置先
+│   │   └── lib.rs                    # サイドカー自動起動（失敗時手動起動案内）
+│   ├── binaries/                     # PyInstaller ビルド済みバイナリ配置先（gitignore）
 │   ├── Cargo.toml
-│   └── tauri.conf.json           # サイドカー・アプリ名設定
+│   └── tauri.conf.json               # アプリ設定（1280×1200、externalBin）
+│
+├── public/
+│   └── fonts/
+│       └── NotoSansJP-Regular.ttf    # PDF 日本語フォント
 │
 ├── docs/
-│   └── DESIGN_caelum.md          # 本ドキュメント
+│   └── DESIGN_caelum.md              # 本ドキュメント
 │
 ├── .github/
 │   └── workflows/
-│       └── ci.yml
+│       └── release.yml               # タグプッシュ時自動ビルド（Win x86_64, macOS ARM/Intel）
 │
-├── CLAUDE.md                     # Claude Code 作業指示
+├── CLAUDE.md                         # Claude Code 作業指示
+├── HANDOFF_caelum.md                 # 引き継ぎドキュメント
+├── README.md                         # 英語 README
+├── README.ja.md                      # 日本語 README
 ├── package.json
 ├── tsconfig.json
-└── README.md
+└── tailwind.config.js
 ```
 
 ---
 
-## 5. 各コンポーネント詳細
+## 5. API エンドポイント一覧
 
-### 5-1. Python サイドカー
+### チャート計算（chart.py）
 
-#### Tauri サイドカー設定（tauri.conf.json）
-```json
-{
-  "bundle": {
-    "externalBin": [
-      "binaries/sidecar"
-    ]
-  }
-}
-```
+| メソッド | パス | 説明 |
+|---|---|---|
+| POST | `/chart` | ネイタルチャート計算 |
+| POST | `/transit` | トランジット二重チャート計算 |
+| POST | `/synastry` | シナストリー二重チャート計算 |
+| POST | `/transit-calendar` | 月間トランジットカレンダー計算 |
+| GET | `/cities` | 都市辞書一覧（`?lang=en` で英語ラベル） |
 
-#### サイドカー起動（main.rs）
-```rust
-// Tauriアプリ起動時にサイドカーを自動起動
-tauri::Builder::default()
-    .setup(|app| {
-        let sidecar = app.shell().sidecar("sidecar").unwrap();
-        sidecar.spawn().unwrap();
-        Ok(())
-    })
-```
+### AI 解釈（interpret.py）
 
-#### FastAPI エントリポイント（sidecar/main.py）
-```python
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from routers import chart, interpret
+| メソッド | パス | 説明 |
+|---|---|---|
+| POST | `/interpret` | ネイタル AI 解釈（SSE ストリーミング） |
+| POST | `/generate-prompt` | ネイタル プロンプト生成（API 不要） |
+| POST | `/interpret-transit` | トランジット AI 解釈（SSE） |
+| POST | `/generate-prompt-transit` | トランジット プロンプト生成 |
+| POST | `/interpret-synastry` | シナストリー AI 解釈（SSE） |
+| POST | `/generate-prompt-synastry` | シナストリー プロンプト生成 |
+| POST | `/interpret-monthly` | 月間フォーカス AI 解釈（SSE） |
+| POST | `/generate-prompt-monthly` | 月間フォーカス プロンプト生成 |
 
-app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"])
-app.include_router(chart.router)
-app.include_router(interpret.router)
-```
+### ジオコーディング（geocode.py）
 
-#### kerykeion呼び出し（online=False、都市辞書使用）
-```python
-# sidecar/data/cities.py — 地方グループ付き都市辞書
-# 日本: 北海道(10)、東北(6)、関東(7)、中部(9)、近畿(7)、中国(5)、四国(4)、九州・沖縄(8) = 56都市
-# 海外: 17都市（ニューヨーク、ロンドン、パリ、北京、ソウル、シドニー等）
-# 合計: 約73都市
+| メソッド | パス | 説明 |
+|---|---|---|
+| GET | `/geocode` | 都市名検索（`?q=...&lang=en`、ローカル辞書 + Nominatim API） |
 
-CITIES: dict[str, CityData] = {
-    "札幌": {"lat": 43.0642, "lng": 141.3469, "tz": "Asia/Tokyo"},
-    "東京": {"lat": 35.6762, "lng": 139.6503, "tz": "Asia/Tokyo"},
-    # ... 他都市省略
-}
+### プロファイル（profiles.py）
 
-# 地方グループ定義（UIの optgroup 用）
-_JAPAN_GROUPS: list[CityGroup] = [
-    {"label": "北海道", "cities": ["稚内", "旭川", "北見", "網走", "根室", "釧路", "帯広", "札幌", "室蘭", "函館"]},
-    {"label": "東北", "cities": ["青森", "盛岡", "仙台", "秋田", "山形", "福島"]},
-    # ... 他地方省略
-]
-```
+| メソッド | パス | 説明 |
+|---|---|---|
+| GET | `/profiles` | プロファイル一覧 |
+| GET | `/profiles/{id}` | プロファイル取得 |
+| POST | `/profiles` | プロファイル作成 |
+| PUT | `/profiles/{id}` | プロファイル更新 |
+| DELETE | `/profiles/{id}` | プロファイル削除 |
 
-#### /chart エンドポイント（sidecar/routers/chart.py）
-```python
-@router.post("/chart")
-async def calculate_chart(data: BirthData):
-    city_data = CITIES.get(data.city)
-    
-    if city_data:
-        # 都市辞書ヒット → オフライン計算
-        subject = AstrologicalSubjectFactory.from_birth_data(
-            data.name,
-            data.year, data.month, data.day,
-            data.hour, data.minute,
-            lat=city_data["lat"],
-            lng=city_data["lng"],
-            tz_str=city_data["tz"],
-            online=False,
-        )
-    else:
-        # フォールバック → 緯度経度直接入力
-        subject = AstrologicalSubjectFactory.from_birth_data(
-            data.name,
-            data.year, data.month, data.day,
-            data.hour, data.minute,
-            lat=data.lat,
-            lng=data.lng,
-            tz_str=data.timezone,
-            online=False,
-        )
-    
-    natal = ChartDataFactory.get_natal_chart(subject)
-    return natal.model_dump()
-```
+### 設定（settings.py）
 
-#### /interpret エンドポイント（SSE対応）
-```python
-@router.post("/interpret")
-async def interpret_chart(data: ChartData):
-    xml_context = to_context(data.subject)  # kerykeion XML生成
-    
-    async def generate():
-        async with anthropic.stream(
-            model="claude-sonnet-4-6",
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": xml_context}]
-        ) as stream:
-            async for text in stream.text_stream:
-                yield f"data: {text}\n\n"
-    
-    return StreamingResponse(generate(), media_type="text/event-stream")
-```
+| メソッド | パス | 説明 |
+|---|---|---|
+| GET | `/settings/api-key-status` | APIキー設定状態確認 |
+| POST | `/settings/api-key` | APIキー保存 |
+| DELETE | `/settings/api-key` | APIキー削除 |
+| GET | `/settings/house-system` | ハウスシステム取得 |
+| POST | `/settings/house-system` | ハウスシステム変更 |
+
+### ヘルスチェック
+
+| メソッド | パス | 説明 |
+|---|---|---|
+| GET | `/health` | サイドカー起動確認 |
 
 ---
 
-### 5-2. Claude API プロンプト設計
+## 6. API スキーマ定義
 
-```python
-# sidecar/prompts/interpretation.py
+### 共通フィールド
 
-SYSTEM_PROMPT = """
-あなたは西洋占星術の解説者です。
-モダン西洋占星術（熱帯・プラシダス）に基づき、
-占星術の初心者にも理解できるよう、平易な日本語で解釈してください。
+全リクエストスキーマに以下のフィールドが含まれる:
+- `house_system: str = "P"` — ハウスシステム（P: プラシダス / W: ホールサイン / A: 等分ハウス）
+- `lang: str = "ja"` — 言語（ja / en）
 
-## 解釈の方針
-- 運命の断言はしない。「〜の傾向があります」「〜を大切にするとよいでしょう」という表現を使う
-- 自己理解・自己受容を促す前向きなトーンを保つ
-- 専門用語を使う場合は必ず平易な説明を添える
+### POST /chart — BirthData
 
-## 出力構成（必ずこの順序で）
-1. **全体の概観**（3〜4文）
-2. **太陽サイン**：本質・アイデンティティ
-3. **月サイン**：感情・内面の欲求
-4. **アセンダント**：外から見た印象・人生への向き合い方
-5. **目立つアスペクト**：上記以外で特徴的な天体間の関係（2〜3個）
-6. **まとめ**（2〜3文）
-
-各項目は200〜300字程度を目安にしてください。
-""".strip()
-```
-
----
-
-### 5-3. チャートビジュアライゼーション（D3.js）
-
-描画する要素：
-- 外円：12サインの区画（各30°、サイン記号付き）
-- 中間：12ハウスの区画（プラシダス計算値に基づく）
-- 天体アイコン：各天体のグリフと度数表示
-- アスペクトライン：天体間の角度関係（色分け）
-  - 合（0°）：紫
-  - トライン（120°）：青
-  - セクスタイル（60°）：緑
-  - スクエア（90°）：赤
-  - オポジション（180°）：橙
-
----
-
-## 6. APIスキーマ定義
-
-### POST /chart
-
-**Request**
 ```typescript
 interface BirthData {
   name: string;
@@ -344,16 +319,18 @@ interface BirthData {
   hour: number;        // 0-23
   minute: number;
   city: string;        // 都市辞書キー（例: "東京"）
-  // 辞書にない場合のフォールバック
-  lat?: number;        // 緯度
+  lat?: number;        // 緯度（辞書にない場合）
   lng?: number;        // 経度
   timezone?: string;   // e.g. "Asia/Tokyo"
+  house_system?: string; // "P" | "W" | "A"
+  lang?: string;       // "ja" | "en"
 }
 ```
 
-**Response**
+### ChartResponse
+
 ```typescript
-interface ChartData {
+interface ChartResponse {
   subject: {
     name: string;
     sun: PlanetData;
@@ -366,265 +343,276 @@ interface ChartData {
     uranus: PlanetData;
     neptune: PlanetData;
     pluto: PlanetData;
-    asc: PlanetData;
-    mc: PlanetData;
+    chiron: PlanetData;
+    mean_lilith: PlanetData;
+    pars_fortunae: PlanetData | null;
+    ascendant: PlanetData;
+    medium_coeli: PlanetData;
+    first_house: HouseData;
+    // ... 12ハウス
   };
-  houses: HouseData[];
   aspects: AspectData[];
 }
 
 interface PlanetData {
   name: string;
-  sign: string;
+  sign: string;        // "Ari", "Tau", ... "Pis"
   sign_num: number;
-  position: number;       // 黄道上の絶対度数 0-360
-  abs_pos: number;
-  sign_position: number;  // サイン内度数 0-30
-  house: string;
-  retrograde: boolean;
-  element: string;
-  quality: string;
+  position: number;    // サイン内度数 0-30
+  abs_pos: number;     // 黄道上の絶対度数 0-360
+  house: string | null;
+  retrograde: boolean | null;
 }
 
 interface AspectData {
   p1_name: string;
   p2_name: string;
+  p1_abs_pos: number;
+  p2_abs_pos: number;
   aspect: string;
   orbit: number;
+  aspect_degrees: number;
+}
+```
+
+### POST /transit — TransitRequest
+
+```typescript
+interface TransitRequest extends BirthData {
+  transit_year: number;
+  transit_month: number;
+  transit_day: number;
+  transit_hour: number;
+  transit_minute: number;
+}
+```
+
+### POST /synastry — SynastryRequest
+
+```typescript
+interface SynastryRequest {
+  name1: string; year1: number; month1: number; day1: number;
+  hour1: number; minute1: number; city1: string;
+  lat1?: number; lng1?: number; timezone1?: string;
+  name2: string; year2: number; month2: number; day2: number;
+  hour2: number; minute2: number; city2: string;
+  lat2?: number; lng2?: number; timezone2?: string;
+  house_system?: string;
+  lang?: string;
+}
+```
+
+### POST /transit-calendar — MonthlyCalendarRequest / Response
+
+```typescript
+interface MonthlyCalendarRequest extends BirthData {
+  calendar_year: number;
+  calendar_month: number;
+}
+
+interface MonthlyCalendarResponse {
+  year: number;
+  month: number;
+  num_days: number;
+  first_weekday: number;  // 0=月 ... 6=日
+  days: CalendarDay[];
+}
+
+interface CalendarDay {
+  day: number;
+  weekday: number;
+  events: CalendarEvent[];
+}
+
+interface CalendarEvent {
+  type: "new_moon" | "full_moon" | "ingress" | "retrograde" | "direct" | "natal_aspect";
+  planet: string;
+  description: string;  // 言語に応じた説明文
+  detail: string;
+}
+```
+
+### DualChartResponse（トランジット / シナストリー共通）
+
+```typescript
+interface DualChartResponse {
+  natal: ChartResponse;
+  transit: ChartResponse;  // トランジットまたは2人目のチャート
 }
 ```
 
 ---
 
-## 7. 開発フェーズ
+## 7. プロンプト設計
 
-### Phase 1 — MVP（目安: 2〜3週間）
+全プロンプトは `sidecar/prompts/` に格納され、`get_*_prompt(lang)` 関数で言語別に取得される。
 
-**目標**: 生年月日を入力するとチャートが表示され、AI解釈が読める状態
+### ネイタル解釈（interpretation.py）
 
-- [ ] Tauriプロジェクトのスキャフォールド
-- [ ] Pythonサイドカーの起動設定
-- [ ] kerykeionで天体計算（/chart実装）
-- [ ] シンプルなチャート円盤描画（D3.js）
-- [ ] Claude APIで太陽・月・ASCの3点解釈
-- [ ] ストリーミングテキスト表示
+**出力構成:**
+1. 全体の概観（3〜4文）
+2. 太陽サイン：本質・アイデンティティ
+3. 月サイン：感情・内面の欲求
+4. アセンダント：外から見た印象・人生への向き合い方
+5. 目立つアスペクト：特徴的な天体間の関係（2〜3個）
+6. まとめ（2〜3文）
 
-### Phase 2 — 拡充（目安: +2〜3週間）
+**制約:** JA: 全体2000字以内 / EN: 全体1500 words以内
 
-- [ ] 全天体・ハウスの詳細表示
-- [ ] アスペクトライン描画
-- [ ] 解釈テキストの章立て表示
-- [ ] 複数チャートの保存・切り替え
-- [ ] タイムゾーン・都市名のオートコンプリート
+### トランジット解釈（transit.py）
 
-### Phase 3 — 差別化（目安: +1ヶ月）
+**出力構成:**
+1. 全体の流れ
+2. 注目すべきトランジット
+3. 意識したいテーマ
+4. まとめとアドバイス
 
-- [ ] トランジットチャート（今日の天体との重ね合わせ）
-- [ ] ハウス解釈の追加
-- [ ] チャートのPDF/SVGエクスポート
-- [ ] 流派切り替え（ホールサイン等）
-- [ ] シナストリー（相性チャート）
+### シナストリー解釈（synastry.py）
 
----
+**出力構成:**
+1. 2人の関係性の概観
+2. 太陽と月の関係
+3. 金星と火星の関係
+4. コミュニケーション
+5. 注目アスペクト
+6. 2人の可能性
 
-## 8. サイドカービルドフロー（PyInstaller）
+### 月間フォーカス（monthly.py）
 
-```bash
-# 【開発時】通常のPython環境で起動
-cd sidecar
-uvicorn main:app --port 8765 --reload
-
-# 【リリース時】PyInstallerでシングルバイナリ化
-cd sidecar
-pip install pyinstaller
-pyinstaller main.py \
-  --onefile \
-  --name sidecar \
-  --add-data "data:data" \      # 都市辞書を同梱
-  --add-data "prompts:prompts"  # プロンプトテンプレートを同梱
-
-# Tauriが期待する命名規則に合わせてリネーム後、配置
-# macOS:   sidecar-x86_64-apple-darwin
-# Windows: sidecar-x86_64-pc-windows-msvc.exe
-cp dist/sidecar ../src-tauri/binaries/sidecar-[TARGET_TRIPLE]
-```
-
-### tauri.conf.json（抜粋）
-```json
-{
-  "app": {
-    "windows": [{
-      "title": "Liber Caeli"
-    }]
-  },
-  "bundle": {
-    "externalBin": [
-      "binaries/sidecar"
-    ]
-  }
-}
-```
-
-### main.rs（サイドカー自動起動）
-```rust
-tauri::Builder::default()
-    .setup(|app| {
-        let sidecar = app.shell().sidecar("sidecar").unwrap();
-        let (_rx, _child) = sidecar
-            .args(["--port", "8765"])
-            .spawn()
-            .expect("Failed to start sidecar");
-        Ok(())
-    })
-```
+**出力構成:**
+1. 今月の全体像
+2. 注目イベント
+3. 時期別アドバイス（上旬・中旬・下旬）
+4. 今月のキーワード
 
 ---
 
-## 9. 環境変数・シークレット管理
+## 8. 多言語対応（i18n）
 
-APIキーはアプリ内の設定ダイアログから登録・削除可能。`sidecar/config.json` に永続化される。
+### フロントエンド
+- **i18next + react-i18next** による UI テキストの外部化
+- 翻訳ファイル: `src/i18n/locales/ja.json`, `en.json`
+- localStorage キー `liber-caeli-language` で言語設定を永続化
+- 全12コンポーネントで `useTranslation()` フック使用
+- 設定画面のドロップダウンで即時切替
 
-```
-# 優先順位:
-# 1. config.json（アプリ内設定）
-# 2. .env ファイル（フォールバック）
-# 3. 環境変数 ANTHROPIC_API_KEY
-```
+### サイドカー
+- 全スキーマに `lang: str = "ja"` フィールド
+- `get_*_prompt(lang)` で言語別システムプロンプト選択
+- `_LABELS` 辞書（interpret.py）でコンテキストラベル多言語化
+- `_labels(lang)` 関数（calendar.py）で天体名・サイン名・アスペクト名の多言語化
+- Nominatim API の `accept-language` を言語に応じて切替
+- 都市辞書の地方グループラベル・都市名ラベルも多言語対応
 
-```bash
-# .env（gitignore対象、フォールバック用）
-ANTHROPIC_API_KEY=sk-ant-...
-
-# config.json（gitignore対象、アプリが自動管理）
-```
-
----
-
-## 10. CLAUDE.md（Claude Code 作業指示）
-
-```markdown
-# caelum — Liber Caeli
-
-西洋占星術ネイタルチャートアプリ（個人利用）。
-Tauri v2 + React + TypeScript + Python サイドカー構成。
-
-## 技術スタック
-- フロントエンド: Tauri v2, React 18, TypeScript, Tailwind CSS, D3.js
-- バックエンド: Python 3.10+, FastAPI, kerykeion（online=False）, uvicorn
-- AI: Anthropic Claude API (claude-sonnet-4-6)
-- 位置情報: 内蔵都市辞書（sidecar/data/cities.py）、GeoNames不使用
-
-## ディレクトリ構造
-- src/        React フロントエンド
-- sidecar/    Python サイドカー（FastAPI）
-- src-tauri/  Tauri設定・Rustコード
-
-## 開発コマンド
-\`\`\`bash
-# フロントエンド + サイドカー同時起動
-npm run tauri dev
-
-# サイドカーのみ起動（デバッグ用）
-cd sidecar && uvicorn main:app --port 8765 --reload
-
-# Pythonパッケージインストール
-pip install -r sidecar/requirements.txt
-\`\`\`
-
-## コーディング規約
-- TypeScript: strict mode、型定義は types/ に集約
-- Python: PEP8準拠、型ヒント必須
-- コミット: Conventional Commits（feat/fix/docs/refactor）
-
-## 注意事項
-- ANTHROPIC_API_KEY は .env に記載（コミット禁止）
-- サイドカーのポートは 8765 固定
-- kerykeionの計算はすべて sidecar/services/kerykeion_service.py を経由する
-- online=False 必須（GeoNames不使用）
-```
+### 用語集
+- `src/data/glossary.ts` に `nameEn`, `summaryEn`, `descriptionEn` フィールド
+- GlossaryModal で `i18n.language` に基づき JA/EN 表示切替
 
 ---
 
-## 11. GitHub リポジトリ設定
+## 9. チャートビジュアライゼーション（D3.js）
 
-### ブランチ戦略
-```
-main          本番（安定版）
-develop       開発統合ブランチ
-feature/xxx   機能開発
-fix/xxx       バグ修正
-```
+### ネイタルチャート
+- 外円: 12サインの区画（各30°、サイン記号＋色分け）
+- 中間: 12ハウスの区画（選択ハウスシステムに基づく）
+- 天体アイコン: 各天体のグリフと度数表示（重なり回避ロジック付き）
+- アスペクトライン: 天体間の角度関係（色分け）
+  - 合（0°）：紫 / トライン（120°）：青 / セクスタイル（60°）：緑
+  - スクエア（90°）：赤 / オポジション（180°）：橙
+- ホバーツールチップ: 天体名・サイン・度数・ハウス・逆行状態
 
-### .gitignore 追加項目
-```
-.env
-sidecar/__pycache__/
-sidecar/*.pyc
-sidecar/.venv/
-src-tauri/target/
-src-tauri/binaries/
-dist/
-```
+### 二重円（トランジット / シナストリー）
+- 内円: ネイタル天体（白色）
+- 外円: トランジット/相手天体（アンバー色）
+- アスペクトラインは両方の天体間で描画
 
-### README.md 構成
-```
-# Liber Caeli ✨
-
-個人利用の西洋占星術ネイタルチャートアプリ。
-ラテン語で「天空の書」。
-
-## 機能
-- ネイタルチャートの計算・描画（モダン西洋占星術・熱帯・プラシダス）
-- Claude AIによる解釈テキスト生成（日本語）
-- 完全オフライン動作（Claude API除く）
-
-## セットアップ
-...（環境構築手順）
-
-## 技術スタック
-- Tauri v2 + React + TypeScript
-- Python / FastAPI / kerykeion（Swiss Ephemeris）
-- Anthropic Claude API
-```
+### インタラクション
+- 天体・サイン・ハウスクリックで用語集モーダル表示
+- PlanetTable のサイン・ハウスセルもクリック対応
 
 ---
 
-## 12. 依存ライブラリ一覧
+## 10. エクスポート機能
 
-### sidecar/requirements.txt
-```
-kerykeion>=4.0.0
-fastapi>=0.110.0
-uvicorn[standard]>=0.27.0
-anthropic>=0.20.0
-pydantic>=2.0.0
-python-dotenv>=1.0.0
-```
+| 形式 | 実装 | 用途 |
+|---|---|---|
+| SVG | SVGシリアライズ → Blobダウンロード | 印刷・ベクター編集 |
+| PNG | SVG → Canvas（2倍解像度）→ PNG | SNS共有 |
+| PDF | jsPDF + Noto Sans JP フォント + チャート画像 + AI解釈テキスト | A4レポート |
 
-### package.json（主要）
-```json
-{
-  "dependencies": {
-    "d3": "^7.9.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.0.0",
-    "typescript": "^5.0.0",
-    "tailwindcss": "^3.4.0"
-  }
-}
-```
+PDF にはアプリタイトル「Liber Caeli」、レポートタイトル（i18n対応）、チャート画像、解釈テキスト（Markdown除去済み）を含む。
 
 ---
 
-## 13. 既知リスク・注意点
+## 11. データ永続化
+
+| データ | 保存先 | 形式 |
+|---|---|---|
+| APIキー | OS アプリデータディレクトリ / `config.json` | JSON |
+| ハウスシステム設定 | 同上 | JSON |
+| プロファイル | 同上 / `profiles.json` | JSON（UUID, timestamps） |
+| 言語設定 | ブラウザ localStorage | `liber-caeli-language` キー |
+
+OS アプリデータディレクトリ:
+- Windows: `%APPDATA%/liber-caeli/`
+- macOS: `~/Library/Application Support/liber-caeli/`
+- Linux: `~/.config/liber-caeli/`
+
+---
+
+## 12. CI/CD
+
+### GitHub Actions（release.yml）
+- **トリガー**: `v*.*.*` タグプッシュ
+- **ビルドマトリクス**:
+  - Windows x86_64（`.exe` インストーラー）
+  - macOS aarch64（`.dmg` / `.app`）
+  - macOS x86_64（`.dmg` / `.app`）
+- **ビルドフロー**:
+  1. Python仮想環境構築 + PyInstaller でサイドカーバイナリ化
+  2. `sidecar-{target_triple}` にリネームして `src-tauri/binaries/` に配置
+  3. `npm run tauri build` で Tauri インストーラー生成
+  4. GitHub Release ドラフトとしてアーティファクト添付
+
+### バージョン更新対象
+- `package.json`
+- `src-tauri/Cargo.toml`
+- `src-tauri/tauri.conf.json`
+- `Cargo.lock` は `cargo generate-lockfile` で自動更新
+
+---
+
+## 13. 開発フェーズ（全完了）
+
+### Phase 1 — MVP ✅
+ネイタルチャート計算・描画・AI解釈の基本動作
+
+### Phase 2 — コア強化 ✅
+- 2-1: プロファイル保存・呼び出し
+- 2-2: SVG/PNG/PDF エクスポート
+- 2-3: Nominatim API ジオコーディング + 都市辞書拡充
+- 2-4: UI改善（ホバーツールチップ・折りたたみ・CSS整理）
+
+### Phase 3 — 占星術機能拡充 ✅
+- 3-1: トランジットチャート（二重円）
+- 3-2: シナストリーチャート（相性）
+- 3-3: 追加天体（キロン・リリス・フォルテュナ）
+- 3-4: ハウスシステム選択（プラシダス/ホールサイン/等分ハウス）
+
+### Phase 4 — 情報・学習・国際化 ✅
+- 4-1: 用語集（グロッサリー）
+- 4-2: 月間トランジットカレンダー
+- 4-3: 多言語対応（日本語/英語）
+
+---
+
+## 14. 既知リスク・注意点
 
 | リスク | 内容 | 対策 |
 |---|---|---|
-| kerykeionのWindows対応 | Swiss Ephemerisのバイナリ依存 | 事前に動作確認必須 |
-| サイドカー起動タイミング | React描画前にサイドカーが未起動の可能性 | ヘルスチェックポーリング実装 |
-| Claude APIのレート制限 | 連続解釈生成時 | リクエストキュー or debounce |
-| PyInstallerのバイナリサイズ | Python環境全体が同梱されるため大きくなる | --excludeで不要パッケージを除外 |
-| Pythonバイナリの命名規則 | Tauriのtarget tripleと一致が必要 | CI/CDでプラットフォーム別にビルド |
+| kerykeionのAGPL | kerykeionのライセンスはAGPL v3 | 個人利用のみのため問題なし |
+| サイドカー起動タイミング | React描画前にサイドカーが未起動の可能性 | `useSidecarReady` でポーリング（500ms間隔、15秒タイムアウト） |
+| PyInstaller + kerykeion | Swiss Ephemerisのネイティブバイナリが含まれる | `--add-binary` で明示的に同梱 |
+| Tauriバイナリ命名規則 | `sidecar-{target_triple}` の形式が必要 | CI/CDでプラットフォーム別にビルド |
+| Claude APIキーの管理 | `.env` をコミットしないこと | `.gitignore` で確実に除外 |
+| コード署名なし | OS セキュリティ警告が表示される | README にインストール手順を記載 |
