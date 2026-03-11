@@ -2,6 +2,7 @@ import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import * as d3 from "d3";
 import {
   ChartResponse,
+  DualChartResponse,
   PLANET_KEYS,
   HOUSE_KEYS,
   SIGN_SYMBOLS,
@@ -24,6 +25,7 @@ export interface ChartWheelHandle {
 
 interface Props {
   data: ChartResponse;
+  transitData?: DualChartResponse | null;
   size?: number;
 }
 
@@ -43,7 +45,7 @@ function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
   return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
 }
 
-const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ data, size = 600 }, ref) {
+const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ data, transitData, size = 600 }, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useImperativeHandle(ref, () => ({
@@ -52,8 +54,8 @@ const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ dat
 
   useEffect(() => {
     if (!svgRef.current || !data) return;
-    drawChart(svgRef.current, data, size);
-  }, [data, size]);
+    drawChart(svgRef.current, data, size, transitData ?? undefined);
+  }, [data, transitData, size]);
 
   return (
     <svg
@@ -68,29 +70,42 @@ const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ dat
 
 export default ChartWheel;
 
-function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number) {
+function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number, transitData?: DualChartResponse) {
   const sel = d3.select(svg);
   sel.selectAll("*").remove();
 
   const cx = size / 2;
   const cy = size / 2;
-  const outerR = size * 0.46;
-  const signR = size * 0.38;
+  const hasTransit = !!transitData;
+
+  // トランジットモードではリングを少し縮小して外側にトランジット天体を配置
+  const outerR = hasTransit ? size * 0.42 : size * 0.46;
+  const signR = hasTransit ? size * 0.35 : size * 0.38;
   const houseR = size * 0.30;
   const innerR = size * 0.15;
-  const planetR = size * 0.34;
+  const planetR = hasTransit ? size * 0.30 : size * 0.34;
+  const transitOuterR = size * 0.46;
+  const transitPlanetR = size * 0.43;
 
   const subject = data.subject;
   const offset = ascOffset(subject.first_house.abs_pos);
 
   const g = sel.append("g");
 
-  // Background
+  // Background (outer circle matches transit or natal)
   g.append("circle")
-    .attr("cx", cx).attr("cy", cy).attr("r", outerR)
+    .attr("cx", cx).attr("cy", cy).attr("r", hasTransit ? transitOuterR : outerR)
     .attr("fill", "#1a1a2e").attr("stroke", "#334").attr("stroke-width", 1);
 
-  // === Sign ring (outer) ===
+  // Transit outer ring boundary
+  if (hasTransit) {
+    g.append("circle")
+      .attr("cx", cx).attr("cy", cy).attr("r", outerR)
+      .attr("fill", "none").attr("stroke", "#446").attr("stroke-width", 0.5)
+      .attr("stroke-dasharray", "3,3");
+  }
+
+  // === Sign ring ===
   drawSignRing(g, cx, cy, outerR, signR, offset);
 
   // === House ring ===
@@ -102,10 +117,89 @@ function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number) {
     .attr("fill", "#111122").attr("stroke", "#445").attr("stroke-width", 1);
 
   // === Aspect lines ===
-  drawAspects(g, cx, cy, innerR * 0.95, data.aspects, offset);
+  if (hasTransit) {
+    // Transit mode: draw transit cross-aspects
+    drawAspects(g, cx, cy, innerR * 0.95, transitData.aspects, offset);
+  } else {
+    drawAspects(g, cx, cy, innerR * 0.95, data.aspects, offset);
+  }
 
-  // === Planets ===
+  // === Natal Planets ===
   drawPlanets(g, cx, cy, planetR, houseR, subject, offset);
+
+  // === Transit Planets (outer ring) ===
+  if (hasTransit) {
+    drawTransitPlanets(g, cx, cy, transitPlanetR, outerR, transitData.second_subject, offset);
+  }
+}
+
+function drawTransitPlanets(
+  g: d3.Selection<SVGGElement, unknown, null, undefined>,
+  cx: number, cy: number,
+  planetR: number, innerR: number,
+  subject: DualChartResponse["second_subject"],
+  offset: number,
+) {
+  const planets = PLANET_KEYS.map((k) => subject[k] as PlanetData);
+
+  const sorted = planets.map((p) => ({
+    ...p,
+    displayAngle: toAngle(p.abs_pos, offset),
+  }));
+  sorted.sort((a, b) => a.abs_pos - b.abs_pos);
+
+  const minGap = 8;
+  for (let i = 1; i < sorted.length; i++) {
+    let diff = sorted[i].abs_pos - sorted[i - 1].abs_pos;
+    if (diff < 0) diff += 360;
+    if (diff < minGap) {
+      sorted[i].displayAngle = sorted[i - 1].displayAngle - minGap;
+    }
+  }
+
+  for (const p of sorted) {
+    const symbol = PLANET_SYMBOLS[p.name] || p.name.slice(0, 2);
+    const pos = polarToXY(cx, cy, planetR, p.displayAngle);
+
+    // Tick line
+    const tickStart = polarToXY(cx, cy, innerR, toAngle(p.abs_pos, offset));
+    const tickEnd = polarToXY(cx, cy, planetR * 0.95, p.displayAngle);
+    g.append("line")
+      .attr("x1", tickStart.x).attr("y1", tickStart.y)
+      .attr("x2", tickEnd.x).attr("y2", tickEnd.y)
+      .attr("stroke", "#664")
+      .attr("stroke-width", 0.4);
+
+    // Planet symbol (transit = amber color)
+    const planetName = PLANET_NAMES_JA[p.name] || p.name;
+    const signName = SIGN_NAMES[p.sign] || p.sign;
+    const deg = Math.floor(p.position);
+    const min = Math.floor((p.position - deg) * 60);
+    const retroLabel = p.retrograde ? " (逆行中)" : "";
+    const tooltip = `T.${planetName}  ${signName} ${deg}°${min.toString().padStart(2, "0")}'${retroLabel}`;
+
+    const planetText = g.append("text")
+      .attr("x", pos.x).attr("y", pos.y)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "central")
+      .attr("fill", "#f0c040")
+      .attr("font-size", planetR * 0.08)
+      .attr("font-weight", "bold")
+      .attr("cursor", "default")
+      .text(symbol);
+    planetText.append("title").text(tooltip);
+
+    if (p.retrograde) {
+      const rPos = polarToXY(cx, cy, planetR * 1.05, p.displayAngle);
+      g.append("text")
+        .attr("x", rPos.x).attr("y", rPos.y)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .attr("fill", "#f88")
+        .attr("font-size", planetR * 0.04)
+        .text("R");
+    }
+  }
 }
 
 function drawSignRing(

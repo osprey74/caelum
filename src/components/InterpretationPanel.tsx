@@ -14,7 +14,7 @@ function splitSections(text: string): Section[] {
   let currentBody: string[] = [];
 
   for (const line of lines) {
-    const headingMatch = line.match(/^#{1,3}\s+(.+)/);
+    const headingMatch = line.match(/^#{1,2}\s+(.+)/);
     if (headingMatch) {
       if (currentHeading || currentBody.length > 0) {
         sections.push({ heading: currentHeading, body: currentBody.join("\n").trim() });

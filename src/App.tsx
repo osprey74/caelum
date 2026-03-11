@@ -6,9 +6,12 @@ import ProfileList from "./components/ProfileList";
 import ChartWheel, { ChartWheelHandle } from "./components/ChartWheel";
 import PlanetTable from "./components/PlanetTable";
 import InterpretationPanel from "./components/InterpretationPanel";
+import TransitPanel from "./components/TransitPanel";
 import ExportButtons from "./components/ExportButtons";
 import ApiKeyDialog from "./components/ApiKeyDialog";
-import { ChartResponse } from "./types/astrology";
+import { ChartResponse, DualChartResponse } from "./types/astrology";
+
+type RightTab = "interpretation" | "transit";
 
 function App() {
   const ready = useSidecarReady();
@@ -20,6 +23,8 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [formInitialData, setFormInitialData] = useState<BirthData | null>(null);
   const [interpretationText, setInterpretationText] = useState("");
+  const [transitData, setTransitData] = useState<DualChartResponse | null>(null);
+  const [rightTab, setRightTab] = useState<RightTab>("interpretation");
   const chartRef = useRef<ChartWheelHandle>(null);
 
   const handleInterpretationTextChange = useCallback((text: string) => {
@@ -36,6 +41,7 @@ function App() {
     setLoading(true);
     setError(null);
     setBirthData(data);
+    setTransitData(null);
     try {
       const result = await fetchChart(data);
       setChartData(result);
@@ -59,6 +65,13 @@ function App() {
       </div>
     );
   }
+
+  const tabBtnClass = (active: boolean) =>
+    `px-3 py-1.5 text-sm rounded-t transition-colors ${
+      active
+        ? "bg-gray-800 text-gray-100 border-b-2 border-indigo-500"
+        : "text-gray-500 hover:text-gray-300"
+    }`;
 
   return (
     <div className="h-screen overflow-hidden bg-gray-950 text-gray-100">
@@ -112,7 +125,7 @@ function App() {
 
           {chartData && !loading && (
             <div className="space-y-6">
-              <ChartWheel ref={chartRef} data={chartData} size={540} />
+              <ChartWheel ref={chartRef} data={chartData} transitData={transitData} size={540} />
               <ExportButtons
                 chartRef={chartRef}
                 subjectName={chartData.subject.name}
@@ -129,13 +142,33 @@ function App() {
           )}
         </main>
 
-        {/* Right sidebar: Interpretation */}
-        <aside className="w-96 shrink-0 border-l border-gray-800 p-4">
-          <InterpretationPanel
-            birthData={birthData}
-            hasApiKey={hasApiKey}
-            onTextChange={handleInterpretationTextChange}
-          />
+        {/* Right sidebar: Interpretation / Transit tabs */}
+        <aside className="w-96 shrink-0 border-l border-gray-800 flex flex-col">
+          <div className="flex gap-1 px-4 pt-3 border-b border-gray-800">
+            <button type="button" onClick={() => setRightTab("interpretation")}
+              className={tabBtnClass(rightTab === "interpretation")}>
+              ネイタル解釈
+            </button>
+            <button type="button" onClick={() => setRightTab("transit")}
+              className={tabBtnClass(rightTab === "transit")}>
+              トランジット
+            </button>
+          </div>
+          <div className="flex-1 p-4 overflow-hidden">
+            {rightTab === "interpretation" ? (
+              <InterpretationPanel
+                birthData={birthData}
+                hasApiKey={hasApiKey}
+                onTextChange={handleInterpretationTextChange}
+              />
+            ) : (
+              <TransitPanel
+                birthData={birthData}
+                hasApiKey={hasApiKey}
+                onTransitData={setTransitData}
+              />
+            )}
+          </div>
         </aside>
       </div>
 

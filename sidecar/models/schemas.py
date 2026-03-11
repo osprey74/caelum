@@ -15,6 +15,53 @@ class BirthData(BaseModel):
     timezone: str | None = None
 
 
+class TransitRequest(BaseModel):
+    """トランジットチャートリクエスト。"""
+    # ネイタル出生データ
+    name: str
+    year: int
+    month: int
+    day: int
+    hour: int
+    minute: int
+    city: str
+    lat: float | None = None
+    lng: float | None = None
+    timezone: str | None = None
+    # トランジット日時
+    transit_year: int
+    transit_month: int
+    transit_day: int
+    transit_hour: int = 12
+    transit_minute: int = 0
+
+
+class SynastryRequest(BaseModel):
+    """シナストリーチャートリクエスト。"""
+    # 1人目
+    name1: str
+    year1: int
+    month1: int
+    day1: int
+    hour1: int
+    minute1: int
+    city1: str
+    lat1: float | None = None
+    lng1: float | None = None
+    timezone1: str | None = None
+    # 2人目
+    name2: str
+    year2: int
+    month2: int
+    day2: int
+    hour2: int
+    minute2: int
+    city2: str
+    lat2: float | None = None
+    lng2: float | None = None
+    timezone2: str | None = None
+
+
 class ProfileCreate(BaseModel):
     """プロファイル作成リクエスト。"""
     name: str

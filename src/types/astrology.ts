@@ -61,6 +61,32 @@ export interface ChartResponse {
   aspects: AspectData[];
 }
 
+/** Transit / Synastry の二重円レスポンス（kerykeion DualChartDataModel） */
+export interface DualChartResponse {
+  chart_type: string;
+  first_subject: ChartSubject;
+  second_subject: ChartSubject;
+  aspects: AspectData[];
+}
+
+export interface TransitRequest {
+  name: string;
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  city: string;
+  lat?: number;
+  lng?: number;
+  timezone?: string;
+  transit_year: number;
+  transit_month: number;
+  transit_day: number;
+  transit_hour?: number;
+  transit_minute?: number;
+}
+
 export interface Profile {
   id: string;
   name: string;

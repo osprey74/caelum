@@ -755,11 +755,11 @@ cd sidecar && pip install -r requirements.txt
 ## Phase 3 完了チェックリスト
 
 ```
-[ ] 3-1: バックエンド POST /transit エンドポイント（kerykeion transit）
-[ ] 3-1: フロントエンド トランジット日付ピッカー
-[ ] 3-1: ChartWheel 二重円描画（ネイタル内円 + トランジット外円）
-[ ] 3-1: POST /interpret-transit トランジット解釈エンドポイント
-[ ] 3-2: バックエンド POST /synastry エンドポイント
+[x] 3-1: バックエンド POST /transit エンドポイント（kerykeion transit）      ← 2026-03-11
+[x] 3-1: フロントエンド トランジット日付ピッカー                            ← 2026-03-11
+[x] 3-1: ChartWheel 二重円描画（ネイタル内円 + トランジット外円）            ← 2026-03-11
+[x] 3-1: POST /interpret-transit トランジット解釈エンドポイント              ← 2026-03-11
+[x] 3-2: バックエンド POST /synastry エンドポイント                          ← 2026-03-11
 [ ] 3-2: フロントエンド 2人分入力フォーム + シナストリーUI
 [ ] 3-2: ChartWheel シナストリー二重円描画
 [ ] 3-2: POST /interpret-synastry シナストリー解釈エンドポイント
@@ -913,6 +913,20 @@ cd sidecar && pip install -r requirements.txt
   - `src/App.tsx`: ChartWheel ref + ExportButtons + InterpretationPanel テキスト連携を統合
   - `package.json`: `jspdf` 依存追加
   - `tsc --noEmit` + `vite build` 通過確認済み
+
+- **Phase 3-1: トランジットチャート（二重円）**
+  - バックエンド:
+    - `sidecar/models/schemas.py`: `TransitRequest`, `SynastryRequest` スキーマ追加
+    - `sidecar/routers/chart.py`: `POST /transit`, `POST /synastry` エンドポイント追加、共通ヘルパー `_resolve_coords` / `_make_subject` にリファクタ
+    - `sidecar/routers/interpret.py`: `POST /interpret-transit` トランジット解釈SSEエンドポイント追加、共通ヘルパーにリファクタ
+    - `sidecar/prompts/transit.py`: トランジット解釈用システムプロンプト新規作成
+  - フロントエンド:
+    - `src/types/astrology.ts`: `DualChartResponse`, `TransitRequest` 型追加
+    - `src/lib/api.ts`: `fetchTransit()`, `streamTransitInterpretation()` 関数追加
+    - `src/components/TransitPanel.tsx`: 日付ピッカー + トランジット計算 + AI解釈パネル新規作成
+    - `src/components/ChartWheel.tsx`: `transitData` prop追加、二重円描画対応（外円にトランジット天体をアンバー色で表示）
+    - `src/App.tsx`: 右サイドバーをタブ切替（ネイタル解釈 / トランジット）に変更
+  - `tsc --noEmit` 通過確認済み
 
 ---
 
