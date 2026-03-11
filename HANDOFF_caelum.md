@@ -2,7 +2,7 @@
 
 **作成日**: 2026-03-09
 **最終更新**: 2026-03-11
-**ステータス**: Phase 3-3 完了、Phase 3-4 未着手
+**ステータス**: Phase 3 全完了（Phase 4 未着手）
 **引き継ぎ先**: Claude Code
 
 ---
@@ -50,7 +50,7 @@
 
 ### 占星術設定（確定）
 - 黄道：熱帯（Tropical）
-- ハウス：プラシダス（Placidus）
+- ハウス：ユーザー選択可能（既定: プラシダス / 選択肢: ホールサイン, 等分ハウス）
 - 天体：10天体 + キロン・リリス・フォルテュナ + ASC/MC
 - アスペクト：主要5種 + セミスクエア・クインカンクス
 - 解釈軸：モダン西洋（性格・傾向）
@@ -764,8 +764,8 @@ cd sidecar && pip install -r requirements.txt
 [x] 3-2: ChartWheel シナストリー二重円描画                                    ← 2026-03-11
 [x] 3-2: POST /interpret-synastry シナストリー解釈エンドポイント              ← 2026-03-11
 [x] 3-3: キロン・リリス等の追加天体表示（型定義・ChartWheel・PlanetTable）          ← 2026-03-11
-[ ] 3-4: ハウスシステム選択UI（設定画面）
-[ ] 3-4: バックエンド houses_system パラメータ対応
+[x] 3-4: ハウスシステム選択UI（設定画面）                                          ← 2026-03-11
+[x] 3-4: バックエンド houses_system パラメータ対応                                  ← 2026-03-11
 ```
 
 ---
@@ -992,6 +992,35 @@ cd sidecar && pip install -r requirements.txt
     - `::webkit-datetime-edit` に `overflow: hidden` + `max-width: 5.5em` で括弧をクリップ
     - `::webkit-calendar-picker-indicator` に `filter: invert(1)` + `margin-left: 4px`（白色化・位置調整）
   - `src/components/TransitPanel.tsx`: インライン Tailwind クラスを削除（グローバルCSSに移行）
+
+### 2026-03-11（第7セッション — Phase 3-4 ハウスシステム選択 + README使い方ガイド）
+
+**完了した作業:**
+- **Phase 3-4: ハウスシステム選択（プラシダス / ホールサイン / 等分ハウス）**
+  - バックエンド:
+    - `sidecar/models/schemas.py`: `BirthData`, `TransitRequest`, `SynastryRequest` に `house_system: str = "P"` 追加
+    - `sidecar/routers/chart.py`: `_make_subject()` に `house_system` パラメータ追加、全3エンドポイント（chart/transit/synastry）で反映
+    - `sidecar/routers/interpret.py`: `_build_subject()` に `house_system` パラメータ追加、全6エンドポイントで反映
+    - `sidecar/services/settings.py`: `get_house_system()` / `set_house_system()` 追加（`VALID_HOUSE_SYSTEMS = {"P", "W", "A"}`）
+    - `sidecar/routers/settings.py`: `GET/POST /settings/house-system` エンドポイント追加
+  - フロントエンド:
+    - `src/types/astrology.ts`: `HOUSE_SYSTEMS` 定数（P/W/A → 日本語ラベル）、`TransitRequest`/`SynastryRequest` に `house_system?` 追加
+    - `src/lib/api.ts`: `BirthData` に `house_system?` 追加、`fetchHouseSystem()` / `saveHouseSystem()` 関数追加
+    - `src/components/ApiKeyDialog.tsx`: APIキー設定 → 汎用「設定」ダイアログに拡張、ハウスシステムドロップダウン追加
+    - `src/App.tsx`: `houseSystem` 状態管理、起動時に設定取得、チャート計算時に `house_system` を注入
+    - `src/components/SynastryPanel.tsx`: `buildSynastryRequest()` に `house_system` フィールド追加
+  - `tsc --noEmit` + `vite build` 通過確認済み
+
+- **README.md 大幅更新**
+  - 機能一覧を4カテゴリに再構成（チャート生成/プロファイル管理/トランジット・シナストリー/AI解釈・エクスポート）
+  - 使い方ガイドを8セクションに拡充（出生データ入力/プロファイル登録/トランジット/シナストリー/エクスポート/ハウスシステム変更/AI解釈/プロンプト生成モード）
+  - プロファイル登録がトランジット・シナストリーの前提であることを特記
+  - ハウスシステム解説セクション追加（プラシダス/ホールサイン/等分ハウスの詳細説明）
+
+- **CLAUDE.md 更新**
+  - 「占星術設定（変更禁止）」→「占星術設定」に変更、ハウスをユーザー選択可能に
+
+**Phase 3 全チェックリスト完了。**
 
 ---
 
