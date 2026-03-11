@@ -4,6 +4,7 @@ import {
   ChartResponse,
   DualChartResponse,
   PLANET_KEYS,
+  OPTIONAL_PLANET_KEYS,
   HOUSE_KEYS,
   SIGN_SYMBOLS,
   SIGN_NAMES,
@@ -16,7 +17,9 @@ import {
 const PLANET_NAMES_JA: Record<string, string> = {
   Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
   Mars: "火星", Jupiter: "木星", Saturn: "土星", Uranus: "天王星",
-  Neptune: "海王星", Pluto: "冥王星", Ascendant: "ASC", Medium_Coeli: "MC",
+  Neptune: "海王星", Pluto: "冥王星",
+  Chiron: "キロン", Mean_Lilith: "リリス", Pars_Fortunae: "フォルテュナ",
+  Ascendant: "ASC", Medium_Coeli: "MC",
 };
 
 export interface ChartWheelHandle {
@@ -141,6 +144,10 @@ function drawTransitPlanets(
   offset: number,
 ) {
   const planets = PLANET_KEYS.map((k) => subject[k] as PlanetData);
+  for (const k of OPTIONAL_PLANET_KEYS) {
+    const p = subject[k] as PlanetData | null;
+    if (p) planets.push(p);
+  }
 
   const sorted = planets.map((p) => ({
     ...p,
@@ -333,6 +340,10 @@ function drawPlanets(
   offset: number,
 ) {
   const planets = PLANET_KEYS.map((k) => subject[k] as PlanetData);
+  for (const k of OPTIONAL_PLANET_KEYS) {
+    const p = subject[k] as PlanetData | null;
+    if (p) planets.push(p);
+  }
   // Add ASC and MC
   planets.push(subject.ascendant as PlanetData);
   planets.push(subject.medium_coeli as PlanetData);

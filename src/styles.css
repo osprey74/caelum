@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* 日付入力の曜日と括弧を非表示（日本語ロケール対策）
+   曜日フィールドを非表示にし、残る括弧はコンテナ幅でクリップ */
+input[type="date"]::-webkit-datetime-edit-day-of-week-field {
+  display: none !important;
+}
+input[type="date"]::-webkit-datetime-edit {
+  overflow: hidden;
+  /* YYYY/MM/DD を表示し、後続の括弧・曜日をクリップ */
+  max-width: 5.5em;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  margin-left: 4px;
+}

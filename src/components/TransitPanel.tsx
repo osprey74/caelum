@@ -181,7 +181,7 @@ export default function TransitPanel({ birthData, hasApiKey, onTransitData, onTe
             lang="en"
             value={transitDate}
             onChange={(e) => setTransitDate(e.target.value)}
-            className="w-full rounded bg-gray-800 border border-gray-600 px-3 py-2 text-gray-100 focus:outline-none focus:border-indigo-500 text-sm [&::-webkit-datetime-edit-day-of-week-field]:hidden"
+            className="w-full rounded bg-gray-800 border border-gray-600 px-3 py-2 text-gray-100 focus:outline-none focus:border-indigo-500 text-sm"
             disabled={loading}
           />
         </div>

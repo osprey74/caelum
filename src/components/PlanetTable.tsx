@@ -1,10 +1,19 @@
 import {
   ChartResponse,
   PLANET_KEYS,
+  OPTIONAL_PLANET_KEYS,
   SIGN_NAMES,
   PLANET_SYMBOLS,
   PlanetData,
 } from "../types/astrology";
+
+const PLANET_NAMES_JA: Record<string, string> = {
+  Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
+  Mars: "火星", Jupiter: "木星", Saturn: "土星", Uranus: "天王星",
+  Neptune: "海王星", Pluto: "冥王星",
+  Chiron: "キロン", Mean_Lilith: "リリス", Pars_Fortunae: "フォルテュナ",
+  Ascendant: "ASC", Medium_Coeli: "MC",
+};
 
 interface Props {
   data: ChartResponse;
@@ -24,6 +33,10 @@ function houseLabel(house: string | null): string {
 export default function PlanetTable({ data }: Props) {
   const subject = data.subject;
   const planets: PlanetData[] = PLANET_KEYS.map((k) => subject[k] as PlanetData);
+  for (const k of OPTIONAL_PLANET_KEYS) {
+    const p = subject[k] as PlanetData | null;
+    if (p) planets.push(p);
+  }
   planets.push(subject.ascendant as PlanetData);
   planets.push(subject.medium_coeli as PlanetData);
 
@@ -44,7 +57,7 @@ export default function PlanetTable({ data }: Props) {
             <tr key={p.name} className="border-b border-gray-800 hover:bg-gray-800/50">
               <td className="py-1.5 px-2">
                 <span className="mr-1.5">{PLANET_SYMBOLS[p.name] || ""}</span>
-                {p.name}
+                {PLANET_NAMES_JA[p.name] || p.name}
               </td>
               <td className="py-1.5 px-2">{SIGN_NAMES[p.sign] || p.sign}</td>
               <td className="py-1.5 px-2 text-right font-mono">{formatDeg(p.position)}</td>

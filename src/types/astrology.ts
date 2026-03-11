@@ -38,6 +38,9 @@ export interface ChartSubject {
   uranus: PlanetData;
   neptune: PlanetData;
   pluto: PlanetData;
+  chiron: PlanetData;
+  mean_lilith: PlanetData;
+  pars_fortunae: PlanetData | null;
   ascendant: PlanetData;
   medium_coeli: PlanetData;
   first_house: HouseData;
@@ -129,7 +132,11 @@ export interface Profile {
 export const PLANET_KEYS = [
   "sun", "moon", "mercury", "venus", "mars",
   "jupiter", "saturn", "uranus", "neptune", "pluto",
+  "chiron", "mean_lilith",
 ] as const;
+
+/** null になり得る追加天体キー */
+export const OPTIONAL_PLANET_KEYS = ["pars_fortunae"] as const;
 
 export const HOUSE_KEYS = [
   "first_house", "second_house", "third_house", "fourth_house",
@@ -152,7 +159,9 @@ export const SIGN_SYMBOLS: Record<string, string> = {
 export const PLANET_SYMBOLS: Record<string, string> = {
   Sun: "☉", Moon: "☽", Mercury: "☿", Venus: "♀",
   Mars: "♂", Jupiter: "♃", Saturn: "♄", Uranus: "♅",
-  Neptune: "♆", Pluto: "⯓", Ascendant: "Asc", Medium_Coeli: "MC",
+  Neptune: "♆", Pluto: "⯓",
+  Chiron: "⚷", Mean_Lilith: "⚸", Pars_Fortunae: "⊕",
+  Ascendant: "Asc", Medium_Coeli: "MC",
 };
 
 export const ASPECT_COLORS: Record<string, string> = {
