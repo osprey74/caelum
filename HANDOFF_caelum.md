@@ -928,6 +928,20 @@ cd sidecar && pip install -r requirements.txt
     - `src/App.tsx`: 右サイドバーをタブ切替（ネイタル解釈 / トランジット）に変更
   - `tsc --noEmit` 通過確認済み
 
+- **バグ修正: アコーディオン折りたたみ**
+  - `src/components/InterpretationPanel.tsx`: `splitSections()` の正規表現を `#{1,3}` → `#{1,2}` に変更
+  - `src/components/TransitPanel.tsx`: 同上（TransitPanel内の独立コピーも修正）
+  - h3見出し（サブセクション）が親h2の中に留まるようになり、「目立つアスペクト」等が1つのセクションとして折りたたまれる
+
+- **バグ修正: トランジット日付の空括弧「()」**
+  - `src/components/TransitPanel.tsx`: date入力に `lang="en"` 属性と `[&::-webkit-datetime-edit-day-of-week-field]:hidden` CSSクラスを追加
+  - Windows WebView2 の日本語ロケールで曜日が空の括弧として表示される問題を解消
+
+- **バグ修正: PDFエクスポート日本語文字化け**
+  - `public/fonts/NotoSansJP-Regular.ttf`: Noto Sans JP フォント（5MB TTF）をバンドル
+  - `src/lib/export.ts`: PDF生成時にフォントを fetch → base64変換 → jsPDF に登録（初回読み込み後キャッシュ）
+  - タイトルも日本語化（`ネイタルチャートレポート — {名前}`）
+
 ---
 
 ## 既知リスク・注意事項
