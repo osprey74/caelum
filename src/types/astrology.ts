@@ -38,7 +38,7 @@ export interface ChartSubject {
   uranus: PlanetData;
   neptune: PlanetData;
   pluto: PlanetData;
-  chiron: PlanetData;
+  chiron: PlanetData | null;
   mean_lilith: PlanetData;
   pars_fortunae: PlanetData | null;
   ascendant: PlanetData;
@@ -136,11 +136,11 @@ export interface Profile {
 export const PLANET_KEYS = [
   "sun", "moon", "mercury", "venus", "mars",
   "jupiter", "saturn", "uranus", "neptune", "pluto",
-  "chiron", "mean_lilith",
+  "mean_lilith",
 ] as const;
 
-/** null になり得る追加天体キー */
-export const OPTIONAL_PLANET_KEYS = ["pars_fortunae"] as const;
+/** null になり得る追加天体キー（エフェメリスデータ欠落時に null を返す場合がある） */
+export const OPTIONAL_PLANET_KEYS = ["chiron", "pars_fortunae"] as const;
 
 export const HOUSE_KEYS = [
   "first_house", "second_house", "third_house", "fourth_house",

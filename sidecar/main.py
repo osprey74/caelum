@@ -1,3 +1,13 @@
+import os
+import sys
+
+# PyInstaller バンドル時にkerykeionのSwiss Ephemerisデータパスを設定
+if getattr(sys, "frozen", False):
+    _bundle_dir = sys._MEIPASS  # type: ignore[attr-defined]
+    _sweph_path = os.path.join(_bundle_dir, "kerykeion", "sweph")
+    if os.path.isdir(_sweph_path):
+        os.environ["SE_EPHE_PATH"] = _sweph_path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import chart, geocode, interpret, profiles, settings

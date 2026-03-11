@@ -45,17 +45,24 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      - name: Locate kerykeion sweph data
+        id: sweph
+        shell: bash
+        run: |
+          SWEPH_DIR=$(python -c "import kerykeion, os; print(os.path.join(os.path.dirname(kerykeion.__file__), 'sweph'))")
+          echo "dir=$SWEPH_DIR" >> "$GITHUB_OUTPUT"
+
       - name: Build sidecar binary (Windows)
         if: runner.os == 'Windows'
         run: |
           cd sidecar
-          pyinstaller main.py --onefile --name sidecar --add-data "data;data" --add-data "prompts;prompts"
+          pyinstaller main.py --onefile --name sidecar --add-data "data;data" --add-data "prompts;prompts" --add-data "${{ steps.sweph.outputs.dir }};kerykeion/sweph"
 
       - name: Build sidecar binary (macOS)
         if: runner.os == 'macOS'
         run: |
           cd sidecar
-          pyinstaller main.py --onefile --name sidecar --add-data "data:data" --add-data "prompts:prompts"
+          pyinstaller main.py --onefile --name sidecar --add-data "data:data" --add-data "prompts:prompts" --add-data "${{ steps.sweph.outputs.dir }}:kerykeion/sweph"
 
       - name: Place sidecar binary for Tauri
         shell: bash

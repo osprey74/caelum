@@ -1,8 +1,8 @@
 # HANDOFF: caelum（Liber Caeli）
 
 **作成日**: 2026-03-09
-**最終更新**: 2026-03-11
-**ステータス**: Phase 4 全完了（4-1 用語集、4-2 月間カレンダー、4-3 多言語対応）
+**最終更新**: 2026-03-12
+**ステータス**: Phase 4 全完了 + v1.0.4 バグ修正（エフェメリスデータ同梱・白画面防止）
 **引き継ぎ先**: Claude Code
 
 ---
@@ -1095,6 +1095,16 @@ cd sidecar && pip install -r requirements.txt
 
 **Phase 4 全チェックリスト完了。**
 
+### 2026-03-12（v1.0.4 — PyInstallerエフェメリスデータ欠落修正）
+
+**バグ修正:**
+- **白画面クラッシュ（リリースビルド限定）**
+  - 原因: PyInstallerビルドにkerykeionのSwiss Ephemerisデータ（`sweph/*.se1`）が同梱されておらず、キロン（Chiron）の天体計算が失敗し `null` を返していた。フロントエンドは `chiron` を必須フィールドとして扱い、`null.name` アクセスでReactがクラッシュ
+  - 修正1: `release.yml` の PyInstaller に `--add-data` で kerykeion の `sweph/` ディレクトリを同梱
+  - 修正2: `sidecar/main.py` に PyInstaller バンドル時の `SE_EPHE_PATH` 環境変数設定を追加
+  - 修正3: `src/types/astrology.ts` で `chiron` を `PLANET_KEYS` → `OPTIONAL_PLANET_KEYS` に移動（null安全化）
+  - 修正4: `src/components/ErrorBoundary.tsx` 新規作成、`src/main.tsx` に React ErrorBoundary を追加（白画面防止）
+
 ---
 
 ## 既知リスク・注意事項
@@ -1103,7 +1113,7 @@ cd sidecar && pip install -r requirements.txt
 |---|---|---|
 | kerykeionのAGPL | kerykeionのライセンスはAGPL v3 | 個人利用のみのため問題なし |
 | サイドカー起動タイミング | React描画前に未起動の可能性 | `useSidecarReady` でポーリング |
-| PyInstaller + kerykeion | Swiss Ephemerisのネイティブバイナリが含まれる | `--add-binary` で明示的に同梱 |
+| PyInstaller + kerykeion | Swiss Ephemerisデータファイルが必要 | `--add-data` で `sweph/` を明示的に同梱 + `SE_EPHE_PATH` 設定 |
 | Tauriバイナリ命名規則 | `sidecar-{target_triple}` の形式が必要 | `tauri info` でtarget tripleを確認 |
 | Claude APIキーの管理 | `.env` をコミットしないこと | `.gitignore` で確実に除外 |
 
