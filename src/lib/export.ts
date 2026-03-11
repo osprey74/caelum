@@ -1,5 +1,24 @@
 import { jsPDF } from "jspdf";
 
+let fontBase64Cache: string | null = null;
+
+async function ensureJapaneseFont(pdf: jsPDF): Promise<void> {
+  if (!fontBase64Cache) {
+    const res = await fetch("/fonts/NotoSansJP-Regular.ttf");
+    const buf = await res.arrayBuffer();
+    const binary = new Uint8Array(buf);
+    let raw = "";
+    const chunk = 8192;
+    for (let i = 0; i < binary.length; i += chunk) {
+      raw += String.fromCharCode(...binary.subarray(i, i + chunk));
+    }
+    fontBase64Cache = btoa(raw);
+  }
+  pdf.addFileToVFS("NotoSansJP-Regular.ttf", fontBase64Cache);
+  pdf.addFont("NotoSansJP-Regular.ttf", "NotoSansJP", "normal");
+  pdf.setFont("NotoSansJP");
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -67,6 +86,7 @@ export async function exportPdf(
   const chartDataUrl = canvas.toDataURL("image/png");
 
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  await ensureJapaneseFont(pdf);
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const margin = 15;
@@ -78,7 +98,7 @@ export async function exportPdf(
   pdf.text("Liber Caeli", margin, 20);
   pdf.setFontSize(12);
   pdf.setTextColor(100, 100, 100);
-  pdf.text(`Natal Chart Report - ${subjectName}`, margin, 28);
+  pdf.text(`ネイタルチャートレポート — ${subjectName}`, margin, 28);
 
   // チャート画像（中央配置）
   const chartSize = Math.min(contentWidth, 140);
