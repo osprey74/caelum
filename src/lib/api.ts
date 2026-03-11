@@ -34,6 +34,23 @@ export async function fetchCityGroups(): Promise<CityGroup[]> {
   return data.groups;
 }
 
+// --- ジオコーディング ---
+
+export interface GeocodingResult {
+  display_name: string;
+  lat: number;
+  lng: number;
+  timezone: string;
+  source: "local" | "nominatim";
+}
+
+export async function searchCity(query: string): Promise<GeocodingResult[]> {
+  const res = await fetch(`${SIDECAR_URL}/geocode?q=${encodeURIComponent(query)}`);
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return data.results;
+}
+
 // --- APIキー設定 ---
 
 export async function fetchApiKeyStatus(): Promise<boolean> {
@@ -53,6 +70,43 @@ export async function saveApiKey(apiKey: string): Promise<void> {
 
 export async function deleteApiKey(): Promise<void> {
   const res = await fetch(`${SIDECAR_URL}/settings/api-key`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+// --- プロファイル管理 ---
+
+import type { Profile } from "../types/astrology";
+
+export async function fetchProfiles(): Promise<Profile[]> {
+  const res = await fetch(`${SIDECAR_URL}/profiles`);
+  const data = await res.json();
+  return data.profiles;
+}
+
+export async function createProfile(data: Omit<Profile, "id" | "created_at" | "updated_at">): Promise<Profile> {
+  const res = await fetch(`${SIDECAR_URL}/profiles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function updateProfile(id: string, data: Partial<BirthData>): Promise<Profile> {
+  const res = await fetch(`${SIDECAR_URL}/profiles/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function deleteProfile(id: string): Promise<void> {
+  const res = await fetch(`${SIDECAR_URL}/profiles/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error(await res.text());

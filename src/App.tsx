@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSidecarReady } from "./hooks/useChart";
 import { fetchChart, fetchApiKeyStatus, BirthData } from "./lib/api";
 import BirthDataForm from "./components/BirthDataForm";
-import ChartWheel from "./components/ChartWheel";
+import ProfileList from "./components/ProfileList";
+import ChartWheel, { ChartWheelHandle } from "./components/ChartWheel";
 import PlanetTable from "./components/PlanetTable";
 import InterpretationPanel from "./components/InterpretationPanel";
+import ExportButtons from "./components/ExportButtons";
 import ApiKeyDialog from "./components/ApiKeyDialog";
 import { ChartResponse } from "./types/astrology";
 
@@ -16,6 +18,13 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [formInitialData, setFormInitialData] = useState<BirthData | null>(null);
+  const [interpretationText, setInterpretationText] = useState("");
+  const chartRef = useRef<ChartWheelHandle>(null);
+
+  const handleInterpretationTextChange = useCallback((text: string) => {
+    setInterpretationText(text);
+  }, []);
 
   useEffect(() => {
     if (ready) {
@@ -73,9 +82,18 @@ function App() {
       </header>
 
       <div className="flex h-[calc(100vh-53px)]">
-        {/* Left sidebar: Form */}
+        {/* Left sidebar: Profiles + Form */}
         <aside className="w-80 shrink-0 border-r border-gray-800 p-4 overflow-auto">
-          <BirthDataForm onSubmit={handleSubmit} disabled={loading} />
+          <ProfileList
+            onSelect={setFormInitialData}
+            currentBirthData={birthData}
+            disabled={loading}
+          />
+          <BirthDataForm
+            onSubmit={handleSubmit}
+            disabled={loading}
+            initialData={formInitialData}
+          />
         </aside>
 
         {/* Main: Chart + Table */}
@@ -94,7 +112,12 @@ function App() {
 
           {chartData && !loading && (
             <div className="space-y-6">
-              <ChartWheel data={chartData} size={540} />
+              <ChartWheel ref={chartRef} data={chartData} size={540} />
+              <ExportButtons
+                chartRef={chartRef}
+                subjectName={chartData.subject.name}
+                interpretationText={interpretationText}
+              />
               <PlanetTable data={chartData} />
             </div>
           )}
@@ -108,7 +131,11 @@ function App() {
 
         {/* Right sidebar: Interpretation */}
         <aside className="w-96 shrink-0 border-l border-gray-800 p-4">
-          <InterpretationPanel birthData={birthData} hasApiKey={hasApiKey} />
+          <InterpretationPanel
+            birthData={birthData}
+            hasApiKey={hasApiKey}
+            onTextChange={handleInterpretationTextChange}
+          />
         </aside>
       </div>
 

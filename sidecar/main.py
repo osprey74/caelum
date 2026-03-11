@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import chart, interpret, settings
+from routers import chart, geocode, interpret, profiles, settings
 
 app = FastAPI(title="Liber Caeli Sidecar")
 
@@ -12,7 +12,9 @@ app.add_middleware(
 )
 
 app.include_router(chart.router)
+app.include_router(geocode.router)
 app.include_router(interpret.router)
+app.include_router(profiles.router)
 app.include_router(settings.router)
 
 

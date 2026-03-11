@@ -1,8 +1,8 @@
 # HANDOFF: caelum（Liber Caeli）
 
 **作成日**: 2026-03-09
-**最終更新**: 2026-03-10
-**ステータス**: Phase 1 完了（動作確認済み）
+**最終更新**: 2026-03-11
+**ステータス**: Phase 2 進行中
 **引き継ぎ先**: Claude Code
 
 ---
@@ -732,6 +732,58 @@ cd sidecar && pip install -r requirements.txt
 
 ---
 
+## Phase 2 完了チェックリスト
+
+```
+[x] 2-4: チャートホイールのホバーツールチップ（天体・アスペクト）        ← 2026-03-11
+[x] 2-4: 解釈テキストのセクション折りたたみ（アコーディオン）           ← 2026-03-11
+[x] 2-4: App.css テンプレート残骸クリーンアップ                        ← 2026-03-11
+[x] 2-1: バックエンド Profile CRUD（スキーマ・サービス・ルーター）       ← 2026-03-11
+[x] 2-1: フロントエンド ProfileList コンポーネント                      ← 2026-03-11
+[x] 2-1: BirthDataForm にプロファイル自動入力（initialData prop）       ← 2026-03-11
+[x] 2-1: App.tsx に ProfileList 統合                                   ← 2026-03-11
+[x] 2-3: バックエンド Nominatim API 検索エンドポイント                    ← 2026-03-11
+[x] 2-3: フロントエンド 都市検索UI（テキスト入力 + 検索結果候補）          ← 2026-03-11
+[x] 2-3: 既存都市辞書をフォールバックとして維持                            ← 2026-03-11
+[x] 2-2: SVG エクスポート機能                                              ← 2026-03-11
+[x] 2-2: PNG エクスポート機能                                              ← 2026-03-11
+[x] 2-2: PDF レポート生成（チャート + 解釈テキスト）                        ← 2026-03-11
+```
+
+---
+
+## Phase 3 完了チェックリスト
+
+```
+[ ] 3-1: バックエンド POST /transit エンドポイント（kerykeion transit）
+[ ] 3-1: フロントエンド トランジット日付ピッカー
+[ ] 3-1: ChartWheel 二重円描画（ネイタル内円 + トランジット外円）
+[ ] 3-1: POST /interpret-transit トランジット解釈エンドポイント
+[ ] 3-2: バックエンド POST /synastry エンドポイント
+[ ] 3-2: フロントエンド 2人分入力フォーム + シナストリーUI
+[ ] 3-2: ChartWheel シナストリー二重円描画
+[ ] 3-2: POST /interpret-synastry シナストリー解釈エンドポイント
+[ ] 3-3: キロン・リリス等の追加天体表示（型定義・ChartWheel・PlanetTable）
+[ ] 3-4: ハウスシステム選択UI（設定画面）
+[ ] 3-4: バックエンド houses_system パラメータ対応
+```
+
+---
+
+## Phase 4 完了チェックリスト
+
+```
+[ ] 4-1: 用語辞書データ作成（天体・サイン・ハウス・アスペクト）
+[ ] 4-1: チャート要素クリックで解説モーダル表示
+[ ] 4-2: バックエンド 月間トランジット一括計算エンドポイント
+[ ] 4-2: フロントエンド カレンダーUI
+[ ] 4-2: AI による月間フォーカスポイント生成
+[ ] 4-3: i18next 導入 + UI文字列の外部化（ja.json / en.json）
+[ ] 4-3: 解釈言語切替（プロンプト言語パラメータ）
+```
+
+---
+
 ## 進捗ログ
 
 ### 2026-03-09（初回セッション）
@@ -805,6 +857,62 @@ cd sidecar && pip install -r requirements.txt
 **動作確認結果:**
 - チャート生成: 正常動作
 - AI解釈: ストリーミング正常、途切れなし、Markdown装飾表示OK
+
+### 2026-03-11（第3セッション — Phase 2-4 UI改善）
+
+**完了した作業:**
+- **Phase 2-4: UI ブラッシュアップ**
+  - `ChartWheel.tsx`: 天体シンボルにホバーツールチップ追加（天体名・サイン・度数・ハウス・逆行）
+  - `ChartWheel.tsx`: アスペクト線にもツールチップ追加（天体ペア・アスペクト種別・オーブ）
+  - `ChartWheel.tsx`: 天体名の日本語辞書 `PLANET_NAMES_JA` を追加
+  - `InterpretationPanel.tsx`: Markdownの見出し単位でセクション折りたたみ（アコーディオン）機能を実装
+  - `InterpretationPanel.tsx`: `splitSections()` でテキストを見出し単位に分割、クリックで開閉
+  - `App.css`: Tauriテンプレートの不要スタイル除去（ライトモード用input/buttonスタイル等）
+  - `tsc --noEmit` + `vite build` 通過確認済み
+
+- **Phase 2-1: チャートプロファイル保存機能**
+  - バックエンド:
+    - `sidecar/models/schemas.py`: `ProfileCreate`, `ProfileUpdate` Pydanticスキーマ追加
+    - `sidecar/services/profiles.py`: JSON永続化（settings.pyと同パターン、アプリデータディレクトリに `profiles.json`）
+    - `sidecar/routers/profiles.py`: CRUD エンドポイント（`GET/POST /profiles`, `GET/PUT/DELETE /profiles/{id}`）
+    - `sidecar/main.py`: profiles ルーター登録
+  - フロントエンド:
+    - `src/types/astrology.ts`: `Profile` インターフェース追加
+    - `src/lib/api.ts`: `fetchProfiles`, `createProfile`, `updateProfile`, `deleteProfile` 関数追加
+    - `src/components/ProfileList.tsx`: プロファイル選択ドロップダウン + 保存/削除ボタン
+    - `src/components/BirthDataForm.tsx`: `initialData` prop追加（プロファイル選択時にフォーム自動入力）
+    - `src/App.tsx`: ProfileList統合、データフロー接続
+  - `tsc --noEmit` + `vite build` 通過確認済み
+
+### 2026-03-11（第4セッション — Phase 2-3 都市辞書拡充 + ジオコーディング）
+
+**完了した作業:**
+- **Phase 2-3: Nominatim API ジオコーディング**
+  - バックエンド:
+    - `sidecar/routers/geocode.py`: `GET /geocode?q=` エンドポイント新規作成
+    - ローカル都市辞書の部分一致検索 + Nominatim API の並列結果を返却
+    - `timezonefinder` で緯度経度からタイムゾーンを自動推定
+    - Nominatim API 失敗時もローカル結果をフォールバックとして返却
+    - `sidecar/main.py`: geocode ルーター登録
+    - `requirements.txt`: `timezonefinder` + 依存パッケージ追加
+  - フロントエンド:
+    - `src/lib/api.ts`: `searchCity()` 関数 + `GeocodingResult` 型追加
+    - `src/components/BirthDataForm.tsx`: 都市選択UIを「一覧から選択」/「都市名で検索」の2モード切替に刷新
+    - 検索モード: テキスト入力 + 検索ボタン → 候補リスト表示 → 選択で lat/lng/tz 自動設定
+    - 辞書モード: 従来のドロップダウン + 手動緯度経度入力をそのまま維持
+  - `tsc --noEmit` 通過確認済み、Python geocode ルーター import 確認済み
+
+- **Phase 2-2: エクスポート機能（SVG / PNG / PDF）**
+  - `src/lib/export.ts`: エクスポートユーティリティ新規作成
+    - `exportSvg()`: SVGシリアライズ → ファイルダウンロード
+    - `exportPng()`: SVG → Canvas → PNG 変換（2倍解像度）
+    - `exportPdf()`: jsPDF でA4レポート生成（チャート画像 + 解釈テキスト）
+  - `src/components/ExportButtons.tsx`: SVG/PNG/PDFボタンコンポーネント
+  - `src/components/ChartWheel.tsx`: `forwardRef` + `useImperativeHandle` で SVG要素を外部公開
+  - `src/components/InterpretationPanel.tsx`: `onTextChange` コールバック追加（PDF用テキスト連携）
+  - `src/App.tsx`: ChartWheel ref + ExportButtons + InterpretationPanel テキスト連携を統合
+  - `package.json`: `jspdf` 依存追加
+  - `tsc --noEmit` + `vite build` 通過確認済み
 
 ---
 

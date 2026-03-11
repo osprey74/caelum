@@ -61,6 +61,22 @@ export interface ChartResponse {
   aspects: AspectData[];
 }
 
+export interface Profile {
+  id: string;
+  name: string;
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  city: string;
+  lat?: number;
+  lng?: number;
+  timezone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export const PLANET_KEYS = [
   "sun", "moon", "mercury", "venus", "mars",
   "jupiter", "saturn", "uranus", "neptune", "pluto",

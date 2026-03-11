@@ -1,15 +1,26 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import * as d3 from "d3";
 import {
   ChartResponse,
   PLANET_KEYS,
   HOUSE_KEYS,
   SIGN_SYMBOLS,
+  SIGN_NAMES,
   PLANET_SYMBOLS,
   ASPECT_COLORS,
   SIGN_COLORS,
   PlanetData,
 } from "../types/astrology";
+
+const PLANET_NAMES_JA: Record<string, string> = {
+  Sun: "太陽", Moon: "月", Mercury: "水星", Venus: "金星",
+  Mars: "火星", Jupiter: "木星", Saturn: "土星", Uranus: "天王星",
+  Neptune: "海王星", Pluto: "冥王星", Ascendant: "ASC", Medium_Coeli: "MC",
+};
+
+export interface ChartWheelHandle {
+  getSvgElement: () => SVGSVGElement | null;
+}
 
 interface Props {
   data: ChartResponse;
@@ -32,8 +43,12 @@ function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
   return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
 }
 
-export default function ChartWheel({ data, size = 600 }: Props) {
+const ChartWheel = forwardRef<ChartWheelHandle, Props>(function ChartWheel({ data, size = 600 }, ref) {
   const svgRef = useRef<SVGSVGElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    getSvgElement: () => svgRef.current,
+  }));
 
   useEffect(() => {
     if (!svgRef.current || !data) return;
@@ -49,7 +64,9 @@ export default function ChartWheel({ data, size = 600 }: Props) {
       className="mx-auto"
     />
   );
-}
+});
+
+export default ChartWheel;
 
 function drawChart(svg: SVGSVGElement, data: ChartResponse, size: number) {
   const sel = d3.select(svg);
@@ -194,12 +211,23 @@ function drawAspects(
     const p2 = polarToXY(cx, cy, r, ang2);
 
     const opacity = Math.max(0.15, 0.6 - a.orbit * 0.06);
-    g.append("line")
+    const aspectNames: Record<string, string> = {
+      conjunction: "コンジャンクション (0°)",
+      opposition: "オポジション (180°)",
+      trine: "トライン (120°)",
+      sextile: "セクスタイル (60°)",
+      square: "スクエア (90°)",
+    };
+    const aspectLine = g.append("line")
       .attr("x1", p1.x).attr("y1", p1.y)
       .attr("x2", p2.x).attr("y2", p2.y)
       .attr("stroke", ASPECT_COLORS[a.aspect] || "#555")
       .attr("stroke-width", 0.8)
       .attr("opacity", opacity);
+    const p1ja = PLANET_NAMES_JA[a.p1_name] || a.p1_name;
+    const p2ja = PLANET_NAMES_JA[a.p2_name] || a.p2_name;
+    const aspectName = aspectNames[a.aspect] || a.aspect;
+    aspectLine.append("title").text(`${p1ja} ${aspectName} ${p2ja}  オーブ: ${a.orbit.toFixed(1)}°`);
   }
 }
 
@@ -245,15 +273,25 @@ function drawPlanets(
       .attr("stroke", "#556")
       .attr("stroke-width", 0.5);
 
-    // Planet symbol
-    g.append("text")
+    // Planet symbol with tooltip
+    const planetName = PLANET_NAMES_JA[p.name] || p.name;
+    const signName = SIGN_NAMES[p.sign] || p.sign;
+    const deg = Math.floor(p.position);
+    const min = Math.floor((p.position - deg) * 60);
+    const houseNum = p.house ? p.house.replace("_House", "").replace("_", " ") : "";
+    const retroLabel = p.retrograde ? " (逆行中)" : "";
+    const tooltip = `${planetName}  ${signName} ${deg}°${min.toString().padStart(2, "0")}'  ${houseNum ? `第${houseNum}ハウス` : ""}${retroLabel}`;
+
+    const planetText = g.append("text")
       .attr("x", pos.x).attr("y", pos.y)
       .attr("text-anchor", "middle")
       .attr("dominant-baseline", "central")
       .attr("fill", "#e8e8f0")
       .attr("font-size", planetR * 0.1)
       .attr("font-weight", "bold")
+      .attr("cursor", "default")
       .text(symbol);
+    planetText.append("title").text(tooltip);
 
     // Retrograde indicator
     if (p.retrograde) {
