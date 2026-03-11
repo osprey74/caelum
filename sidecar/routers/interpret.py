@@ -30,10 +30,12 @@ def _resolve_location(city: str, lat: float | None, lng: float | None,
 
 
 def _build_subject(name: str, year: int, month: int, day: int,
-                   hour: int, minute: int, lat: float, lng: float, tz_str: str):
+                   hour: int, minute: int, lat: float, lng: float, tz_str: str,
+                   house_system: str = "P"):
     return AstrologicalSubjectFactory.from_birth_data(
         name, year, month, day, hour, minute,
         lat=lat, lng=lng, tz_str=tz_str, online=False,
+        houses_system_identifier=house_system,
     )
 
 
@@ -70,7 +72,7 @@ async def interpret_chart(data: BirthData):
 
     lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
     subject = _build_subject(data.name, data.year, data.month, data.day,
-                             data.hour, data.minute, lat, lng, tz_str)
+                             data.hour, data.minute, lat, lng, tz_str, data.house_system)
     xml_context = to_context(subject)
     return _stream_response(SYSTEM_PROMPT, xml_context, api_key)
 
@@ -84,10 +86,10 @@ async def interpret_transit(data: TransitRequest):
 
     lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
     natal_subject = _build_subject(data.name, data.year, data.month, data.day,
-                                   data.hour, data.minute, lat, lng, tz_str)
+                                   data.hour, data.minute, lat, lng, tz_str, data.house_system)
     transit_subject = _build_subject(
         "Transit", data.transit_year, data.transit_month, data.transit_day,
-        data.transit_hour, data.transit_minute, lat, lng, tz_str,
+        data.transit_hour, data.transit_minute, lat, lng, tz_str, data.house_system,
     )
 
     natal_context = to_context(natal_subject)
@@ -113,9 +115,9 @@ async def interpret_synastry(data: SynastryRequest):
     lat2, lng2, tz2 = _resolve_location(data.city2, data.lat2, data.lng2, data.timezone2)
 
     subject1 = _build_subject(data.name1, data.year1, data.month1, data.day1,
-                              data.hour1, data.minute1, lat1, lng1, tz1)
+                              data.hour1, data.minute1, lat1, lng1, tz1, data.house_system)
     subject2 = _build_subject(data.name2, data.year2, data.month2, data.day2,
-                              data.hour2, data.minute2, lat2, lng2, tz2)
+                              data.hour2, data.minute2, lat2, lng2, tz2, data.house_system)
 
     context1 = to_context(subject1)
     context2 = to_context(subject2)
@@ -134,7 +136,7 @@ async def generate_prompt(data: BirthData):
     """APIキー不要。チャートデータからプロンプトテキストを生成して返す。"""
     lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
     subject = _build_subject(data.name, data.year, data.month, data.day,
-                             data.hour, data.minute, lat, lng, tz_str)
+                             data.hour, data.minute, lat, lng, tz_str, data.house_system)
     xml_context = to_context(subject)
 
     prompt_text = f"""以下のシステムプロンプトとチャートデータをお使いのAIに貼り付けてください。
@@ -159,10 +161,10 @@ async def generate_prompt_transit(data: TransitRequest):
     """APIキー不要。トランジット解釈用プロンプトを生成して返す。"""
     lat, lng, tz_str = _resolve_location(data.city, data.lat, data.lng, data.timezone)
     natal_subject = _build_subject(data.name, data.year, data.month, data.day,
-                                   data.hour, data.minute, lat, lng, tz_str)
+                                   data.hour, data.minute, lat, lng, tz_str, data.house_system)
     transit_subject = _build_subject(
         "Transit", data.transit_year, data.transit_month, data.transit_day,
-        data.transit_hour, data.transit_minute, lat, lng, tz_str,
+        data.transit_hour, data.transit_minute, lat, lng, tz_str, data.house_system,
     )
 
     natal_context = to_context(natal_subject)
@@ -196,9 +198,9 @@ async def generate_prompt_synastry(data: SynastryRequest):
     lat2, lng2, tz2 = _resolve_location(data.city2, data.lat2, data.lng2, data.timezone2)
 
     subject1 = _build_subject(data.name1, data.year1, data.month1, data.day1,
-                              data.hour1, data.minute1, lat1, lng1, tz1)
+                              data.hour1, data.minute1, lat1, lng1, tz1, data.house_system)
     subject2 = _build_subject(data.name2, data.year2, data.month2, data.day2,
-                              data.hour2, data.minute2, lat2, lng2, tz2)
+                              data.hour2, data.minute2, lat2, lng2, tz2, data.house_system)
 
     context1 = to_context(subject1)
     context2 = to_context(subject2)

@@ -115,6 +115,7 @@ export default function SynastryPanel({ birthData, hasApiKey, onSynastryData, on
       lat2: person2Data.lat,
       lng2: person2Data.lng,
       timezone2: person2Data.timezone,
+      house_system: birthData.house_system,
     };
   }
 

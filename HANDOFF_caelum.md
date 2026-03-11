@@ -2,7 +2,7 @@
 
 **作成日**: 2026-03-09
 **最終更新**: 2026-03-11
-**ステータス**: Phase 3 進行中
+**ステータス**: Phase 3-3 完了、Phase 3-4 未着手
 **引き継ぎ先**: Claude Code
 
 ---
@@ -51,7 +51,7 @@
 ### 占星術設定（確定）
 - 黄道：熱帯（Tropical）
 - ハウス：プラシダス（Placidus）
-- 天体：10天体 + ASC/MC
+- 天体：10天体 + キロン・リリス・フォルテュナ + ASC/MC
 - アスペクト：主要5種 + セミスクエア・クインカンクス
 - 解釈軸：モダン西洋（性格・傾向）
 
@@ -763,7 +763,7 @@ cd sidecar && pip install -r requirements.txt
 [x] 3-2: フロントエンド 2人分入力フォーム + シナストリーUI                    ← 2026-03-11
 [x] 3-2: ChartWheel シナストリー二重円描画                                    ← 2026-03-11
 [x] 3-2: POST /interpret-synastry シナストリー解釈エンドポイント              ← 2026-03-11
-[ ] 3-3: キロン・リリス等の追加天体表示（型定義・ChartWheel・PlanetTable）
+[x] 3-3: キロン・リリス等の追加天体表示（型定義・ChartWheel・PlanetTable）          ← 2026-03-11
 [ ] 3-4: ハウスシステム選択UI（設定画面）
 [ ] 3-4: バックエンド houses_system パラメータ対応
 ```
@@ -969,6 +969,29 @@ cd sidecar && pip install -r requirements.txt
 - **UX改善: エクスポート完了通知トースト**
   - `src/components/ExportButtons.tsx`: SVG/PNG/PDFエクスポート完了時に緑色のトースト通知を表示（2.5秒で自動消去、フェードイン/アウトアニメーション付き）
   - `tailwind.config.js`: `fade-in-out` カスタムアニメーション追加
+
+### 2026-03-11（第6セッション — Phase 3-3 追加天体 + 日付入力修正）
+
+**完了した作業:**
+- **Phase 3-3: 追加天体表示（キロン・リリス・フォルテュナ）**
+  - `src/types/astrology.ts`:
+    - `ChartSubject` に `chiron`, `mean_lilith` フィールド追加、`pars_fortunae` をnullable追加
+    - `PLANET_KEYS` にキロン・リリスを追加、`OPTIONAL_PLANET_KEYS` 新設（`pars_fortunae` 用）
+    - `PLANET_SYMBOLS` にキロン⚷・リリス⚸・フォルテュナ⊕を追加
+  - `src/components/ChartWheel.tsx`: OPTIONAL_PLANET_KEYS のnullチェック付き天体描画対応
+  - `src/components/PlanetTable.tsx`: OPTIONAL_PLANET_KEYS 対応 + 日本語天体名辞書追加
+
+- **バグ修正: pars_fortunae が null でクラッシュ（白画面）**
+  - 原因: kerykeion が `pars_fortunae: null` を返すケースがあり、`.name` アクセスでReactが落ちる
+  - 修正: `pars_fortunae` を `PLANET_KEYS` から分離し `OPTIONAL_PLANET_KEYS` として null チェック後に追加
+
+- **バグ修正: トランジット日付入力の括弧表示（再発）**
+  - WebView2 日本語ロケールで `YYYY/MM/DD(曜)` と表示される問題が再発
+  - `src/styles.css` にグローバルCSS追加:
+    - `::webkit-datetime-edit-day-of-week-field` を `display: none`
+    - `::webkit-datetime-edit` に `overflow: hidden` + `max-width: 5.5em` で括弧をクリップ
+    - `::webkit-calendar-picker-indicator` に `filter: invert(1)` + `margin-left: 4px`（白色化・位置調整）
+  - `src/components/TransitPanel.tsx`: インライン Tailwind クラスを削除（グローバルCSSに移行）
 
 ---
 

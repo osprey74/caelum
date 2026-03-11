@@ -13,6 +13,7 @@ class BirthData(BaseModel):
     lat: float | None = None
     lng: float | None = None
     timezone: str | None = None
+    house_system: str = "P"  # P=Placidus, W=Whole Sign, A=Equal
 
 
 class TransitRequest(BaseModel):
@@ -28,6 +29,7 @@ class TransitRequest(BaseModel):
     lat: float | None = None
     lng: float | None = None
     timezone: str | None = None
+    house_system: str = "P"  # P=Placidus, W=Whole Sign, A=Equal
     # トランジット日時
     transit_year: int
     transit_month: int
@@ -60,6 +62,7 @@ class SynastryRequest(BaseModel):
     lat2: float | None = None
     lng2: float | None = None
     timezone2: str | None = None
+    house_system: str = "P"  # P=Placidus, W=Whole Sign, A=Equal
 
 
 class ProfileCreate(BaseModel):

@@ -21,10 +21,11 @@ def _resolve_coords(city: str, lat: float | None, lng: float | None, timezone: s
 
 
 def _make_subject(name: str, year: int, month: int, day: int, hour: int, minute: int,
-                   lat: float, lng: float, tz_str: str):
+                   lat: float, lng: float, tz_str: str, house_system: str = "P"):
     return AstrologicalSubjectFactory.from_birth_data(
         name, year, month, day, hour, minute,
         lat=lat, lng=lng, tz_str=tz_str, online=False,
+        houses_system_identifier=house_system,
     )
 
 
@@ -32,7 +33,7 @@ def _make_subject(name: str, year: int, month: int, day: int, hour: int, minute:
 async def calculate_chart(data: BirthData):
     lat, lng, tz_str = _resolve_coords(data.city, data.lat, data.lng, data.timezone)
     subject = _make_subject(data.name, data.year, data.month, data.day,
-                            data.hour, data.minute, lat, lng, tz_str)
+                            data.hour, data.minute, lat, lng, tz_str, data.house_system)
     natal = ChartDataFactory.create_natal_chart_data(subject)
     return natal.model_dump()
 
@@ -43,10 +44,10 @@ async def calculate_transit(data: TransitRequest):
     lat, lng, tz_str = _resolve_coords(data.city, data.lat, data.lng, data.timezone)
 
     natal_subject = _make_subject(data.name, data.year, data.month, data.day,
-                                  data.hour, data.minute, lat, lng, tz_str)
+                                  data.hour, data.minute, lat, lng, tz_str, data.house_system)
     transit_subject = _make_subject(
         "Transit", data.transit_year, data.transit_month, data.transit_day,
-        data.transit_hour, data.transit_minute, lat, lng, tz_str,
+        data.transit_hour, data.transit_minute, lat, lng, tz_str, data.house_system,
     )
 
     chart = ChartDataFactory.create_transit_chart_data(natal_subject, transit_subject)
@@ -60,9 +61,9 @@ async def calculate_synastry(data: SynastryRequest):
     lat2, lng2, tz2 = _resolve_coords(data.city2, data.lat2, data.lng2, data.timezone2)
 
     subject1 = _make_subject(data.name1, data.year1, data.month1, data.day1,
-                             data.hour1, data.minute1, lat1, lng1, tz1)
+                             data.hour1, data.minute1, lat1, lng1, tz1, data.house_system)
     subject2 = _make_subject(data.name2, data.year2, data.month2, data.day2,
-                             data.hour2, data.minute2, lat2, lng2, tz2)
+                             data.hour2, data.minute2, lat2, lng2, tz2, data.house_system)
 
     chart = ChartDataFactory.create_synastry_chart_data(subject1, subject2)
     return chart.model_dump()

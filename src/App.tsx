@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSidecarReady } from "./hooks/useChart";
-import { fetchChart, fetchApiKeyStatus, BirthData } from "./lib/api";
+import { fetchChart, fetchApiKeyStatus, fetchHouseSystem, BirthData } from "./lib/api";
 import BirthDataForm from "./components/BirthDataForm";
 import ProfileList from "./components/ProfileList";
 import ChartWheel, { ChartWheelHandle } from "./components/ChartWheel";
@@ -22,6 +22,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [houseSystem, setHouseSystem] = useState("P");
   const [formInitialData, setFormInitialData] = useState<BirthData | null>(null);
   const [natalInterpText, setNatalInterpText] = useState("");
   const [transitInterpText, setTransitInterpText] = useState("");
@@ -67,16 +68,18 @@ function App() {
   useEffect(() => {
     if (ready) {
       fetchApiKeyStatus().then(setHasApiKey).catch(() => {});
+      fetchHouseSystem().then(setHouseSystem).catch(() => {});
     }
   }, [ready]);
 
   async function handleSubmit(data: BirthData) {
     setLoading(true);
     setError(null);
-    setBirthData(data);
+    const dataWithHs = { ...data, house_system: houseSystem };
+    setBirthData(dataWithHs);
     setTransitData(null);
     try {
-      const result = await fetchChart(data);
+      const result = await fetchChart(dataWithHs);
       setChartData(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : "チャートの生成に失敗しました。");
@@ -118,12 +121,12 @@ function App() {
           type="button"
           onClick={() => setShowSettings(true)}
           className="flex items-center gap-1.5 rounded bg-gray-800 px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
-          title="APIキー設定"
+          title="設定"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
             <path fillRule="evenodd" d="M7.84 1.804A1 1 0 0 1 8.82 1h2.36a1 1 0 0 1 .98.804l.331 1.652a6.993 6.993 0 0 1 1.929 1.115l1.598-.54a1 1 0 0 1 1.186.447l1.18 2.044a1 1 0 0 1-.205 1.251l-1.267 1.113a7.047 7.047 0 0 1 0 2.228l1.267 1.113a1 1 0 0 1 .206 1.25l-1.18 2.045a1 1 0 0 1-1.187.447l-1.598-.54a6.993 6.993 0 0 1-1.929 1.115l-.33 1.652a1 1 0 0 1-.98.804H8.82a1 1 0 0 1-.98-.804l-.331-1.652a6.993 6.993 0 0 1-1.929-1.115l-1.598.54a1 1 0 0 1-1.186-.447l-1.18-2.044a1 1 0 0 1 .205-1.251l1.267-1.114a7.05 7.05 0 0 1 0-2.227L1.821 7.773a1 1 0 0 1-.206-1.25l1.18-2.045a1 1 0 0 1 1.187-.447l1.598.54A6.993 6.993 0 0 1 7.51 3.456l.33-1.652ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
           </svg>
-          {hasApiKey ? "APIキー設定済み" : "APIキー未設定"}
+          設定
         </button>
       </header>
 
@@ -224,8 +227,10 @@ function App() {
       {showSettings && (
         <ApiKeyDialog
           hasKey={hasApiKey}
+          houseSystem={houseSystem}
           onClose={() => setShowSettings(false)}
           onUpdate={setHasApiKey}
+          onHouseSystemChange={setHouseSystem}
         />
       )}
     </div>

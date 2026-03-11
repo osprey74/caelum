@@ -83,6 +83,7 @@ export interface TransitRequest {
   lat?: number;
   lng?: number;
   timezone?: string;
+  house_system?: string;
   transit_year: number;
   transit_month: number;
   transit_day: number;
@@ -111,6 +112,7 @@ export interface SynastryRequest {
   lat2?: number;
   lng2?: number;
   timezone2?: string;
+  house_system?: string;
 }
 
 export interface Profile {
@@ -162,6 +164,13 @@ export const PLANET_SYMBOLS: Record<string, string> = {
   Neptune: "♆", Pluto: "⯓",
   Chiron: "⚷", Mean_Lilith: "⚸", Pars_Fortunae: "⊕",
   Ascendant: "Asc", Medium_Coeli: "MC",
+};
+
+/** ハウスシステム選択肢 */
+export const HOUSE_SYSTEMS: Record<string, string> = {
+  P: "プラシダス (Placidus)",
+  W: "ホールサイン (Whole Sign)",
+  A: "等分ハウス (Equal)",
 };
 
 export const ASPECT_COLORS: Record<string, string> = {

@@ -66,3 +66,24 @@ def delete_api_key() -> None:
 def has_api_key() -> bool:
     """APIキーが設定されているか。"""
     return get_api_key() is not None
+
+
+# --- ハウスシステム設定 ---
+
+VALID_HOUSE_SYSTEMS = {"P", "W", "A"}  # Placidus, Whole Sign, Equal
+
+
+def get_house_system() -> str:
+    """保存されたハウスシステムを取得（既定: P=Placidus）。"""
+    config = _load_config()
+    hs = config.get("house_system", "P")
+    return hs if hs in VALID_HOUSE_SYSTEMS else "P"
+
+
+def set_house_system(system: str) -> None:
+    """ハウスシステムを config.json に保存。"""
+    if system not in VALID_HOUSE_SYSTEMS:
+        raise ValueError(f"無効なハウスシステム: {system}（有効: {VALID_HOUSE_SYSTEMS}）")
+    config = _load_config()
+    config["house_system"] = system
+    _save_config(config)

@@ -11,6 +11,7 @@ export interface BirthData {
   lat?: number;
   lng?: number;
   timezone?: string;
+  house_system?: string;
 }
 
 export async function fetchChart(data: BirthData) {
@@ -175,6 +176,23 @@ export async function saveApiKey(apiKey: string): Promise<void> {
 export async function deleteApiKey(): Promise<void> {
   const res = await fetch(`${SIDECAR_URL}/settings/api-key`, {
     method: "DELETE",
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+// --- ハウスシステム設定 ---
+
+export async function fetchHouseSystem(): Promise<string> {
+  const res = await fetch(`${SIDECAR_URL}/settings/house-system`);
+  const data = await res.json();
+  return data.house_system;
+}
+
+export async function saveHouseSystem(houseSystem: string): Promise<void> {
+  const res = await fetch(`${SIDECAR_URL}/settings/house-system`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ house_system: houseSystem }),
   });
   if (!res.ok) throw new Error(await res.text());
 }

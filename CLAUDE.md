@@ -27,9 +27,9 @@ uvicorn main:app --port 8765 --reload
 cd sidecar && pip install -r requirements.txt
 ```
 
-## 占星術設定（変更禁止）
-- 黄道: 熱帯（Tropical）
-- ハウス: プラシダス（Placidus）
+## 占星術設定
+- 黄道: 熱帯（Tropical）（変更禁止）
+- ハウス: ユーザー選択可能（既定: プラシダス / 選択肢: ホールサイン, 等分ハウス）
 - online: False（GeoNames不使用）
 - ポート: 8765固定
 
