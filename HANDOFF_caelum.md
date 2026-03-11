@@ -2,7 +2,7 @@
 
 **作成日**: 2026-03-09
 **最終更新**: 2026-03-11
-**ステータス**: Phase 3 全完了（Phase 4 未着手）
+**ステータス**: Phase 4-1, 4-2 完了（4-3 多言語対応 未着手）
 **引き継ぎ先**: Claude Code
 
 ---
@@ -773,11 +773,11 @@ cd sidecar && pip install -r requirements.txt
 ## Phase 4 完了チェックリスト
 
 ```
-[ ] 4-1: 用語辞書データ作成（天体・サイン・ハウス・アスペクト）
-[ ] 4-1: チャート要素クリックで解説モーダル表示
-[ ] 4-2: バックエンド 月間トランジット一括計算エンドポイント
-[ ] 4-2: フロントエンド カレンダーUI
-[ ] 4-2: AI による月間フォーカスポイント生成
+[x] 4-1: 用語辞書データ作成（天体・サイン・ハウス・アスペクト）                  ← 2026-03-11
+[x] 4-1: チャート要素クリックで解説モーダル表示                                ← 2026-03-11
+[x] 4-2: バックエンド 月間トランジット一括計算エンドポイント                    ← 2026-03-11
+[x] 4-2: フロントエンド カレンダーUI                                          ← 2026-03-11
+[x] 4-2: AI による月間フォーカスポイント生成                                  ← 2026-03-11
 [ ] 4-3: i18next 導入 + UI文字列の外部化（ja.json / en.json）
 [ ] 4-3: 解釈言語切替（プロンプト言語パラメータ）
 ```
@@ -1021,6 +1021,35 @@ cd sidecar && pip install -r requirements.txt
   - 「占星術設定（変更禁止）」→「占星術設定」に変更、ハウスをユーザー選択可能に
 
 **Phase 3 全チェックリスト完了。**
+
+### 2026-03-11（第8セッション — Phase 4-1 用語集 + Phase 4-2 月間カレンダー）
+
+**完了した作業:**
+- **Phase 4-1: 用語集（グロッサリー）**
+  - `src/data/glossary.ts`: 用語辞書データ新規作成（天体13種・サイン12種・ハウス12種・アスペクト7種の日本語解説）
+  - `src/components/GlossaryModal.tsx`: モーダルコンポーネント新規作成（カテゴリラベル・タイトル・キーワード・説明文表示、背景クリックで閉じる）
+  - `src/components/ChartWheel.tsx`: 天体・サイン・ハウス・アスペクトクリックで `onGlossaryClick` イベント発火
+  - `src/components/PlanetTable.tsx`: サイン・ハウスセルクリックで `onGlossaryClick` イベント発火
+  - `src/App.tsx`: `GlossaryModal` 統合、`handleGlossaryClick` で辞書エントリ検索・モーダル表示
+
+- **Phase 4-2: 月間トランジットカレンダー**
+  - バックエンド:
+    - `sidecar/services/calendar.py`: 月間トランジット一括計算ロジック新規作成（正午トランジット天体を日ごとに計算、新月/満月・サインイングレス・逆行/順行・ネイタルアスペクトの4種イベント検出）
+    - `sidecar/models/schemas.py`: `MonthlyCalendarRequest` スキーマ追加
+    - `sidecar/routers/chart.py`: `POST /transit-calendar` エンドポイント追加
+    - `sidecar/prompts/monthly.py`: 月間フォーカス用システムプロンプト新規作成（全体像・注目イベント・時期別アドバイス・キーワードの4構成）
+    - `sidecar/routers/interpret.py`: `POST /interpret-monthly` SSEエンドポイント + `POST /generate-prompt-monthly` プロンプト生成エンドポイント追加
+  - フロントエンド:
+    - `src/types/astrology.ts`: `MonthlyCalendarRequest`, `CalendarEvent`, `CalendarDay`, `MonthlyCalendarResponse` 型追加
+    - `src/lib/api.ts`: `fetchMonthlyCalendar()`, `streamMonthlyInterpretation()`, `generateMonthlyPrompt()` 関数追加
+    - `src/components/CalendarPanel.tsx`: 月間カレンダーパネル新規作成（月ナビゲーション、7列カレンダーグリッド、イベントドットインジケーター、日選択でイベント詳細表示、AI月間フォーカス解釈、セクション折りたたみ、プロンプト生成モード対応）
+    - `src/App.tsx`: 右サイドバーに「月間カレンダー」タブ追加（4タブ構成）、`calendarInterpText` 状態管理、タブ文字折り返し修正（`text-sm` + `whitespace-nowrap`）
+
+- **README.md 更新**
+  - 機能一覧に「用語集（グロッサリー）」セクション追加
+  - 月間カレンダーの使い方セクション・APIコスト情報は前セッションで追加済み
+
+**Phase 4-1, 4-2 チェックリスト完了。残り: 4-3 多言語対応。**
 
 ---
 
