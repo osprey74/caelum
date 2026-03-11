@@ -33,6 +33,14 @@ async def health():
     return {"status": "ok"}
 
 
+@app.post("/shutdown")
+async def shutdown():
+    """アプリ終了時にフロントエンドから呼ばれるシャットダウンエンドポイント。"""
+    import asyncio
+    asyncio.get_event_loop().call_later(0.5, lambda: os._exit(0))
+    return {"status": "shutting_down"}
+
+
 if __name__ == "__main__":
     import uvicorn
 
