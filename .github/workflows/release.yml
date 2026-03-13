@@ -71,6 +71,10 @@ jobs:
           cp "sidecar/dist/sidecar${{ matrix.sidecar-ext }}" \
              "src-tauri/binaries/sidecar-${{ matrix.target }}${{ matrix.sidecar-ext }}"
 
+      - name: Ad-hoc sign sidecar binary (macOS)
+        if: runner.os == 'macOS'
+        run: codesign --force --sign - "src-tauri/binaries/sidecar-${{ matrix.target }}"
+
       # ── Node.js + Rust ──
       - uses: actions/setup-node@v4
         with:

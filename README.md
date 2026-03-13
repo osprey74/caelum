@@ -183,11 +183,11 @@ After dragging the app from the `.dmg` to Applications, the first launch will sh
 3. Click "Open Anyway"
 4. Enter your password to allow
 
-Alternatively, run the following command in Terminal before launching:
-
-```bash
-xattr -cr /Applications/caelum.app
-```
+> **If the app launches but stays on the loading screen (sidecar fails to start):** Even after allowing the app through Gatekeeper, the internal Python sidecar binary may still be blocked by macOS quarantine. Run the following command in Terminal to remove the quarantine attribute, then relaunch the app:
+>
+> ```bash
+> xattr -cr /Applications/caelum.app
+> ```
 
 ## Tech Stack
 
