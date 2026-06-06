@@ -279,9 +279,29 @@ npm run tauri dev
 
 ## ライセンス
 
-[MIT License](LICENSE)
+Liber Caeli は二段階のライセンス構造になっています。
 
-**注意**: 本アプリが依存する [kerykeion](https://github.com/g-battaglia/kerykeion) は AGPL v3 ライセンスです。kerykeion を含むバイナリの配布時は AGPL v3 の条件に従う必要があります。
+### Liber Caeli 独自のソースコード（MIT License）
+
+- Tauri (Rust) 部分
+- フロントエンド (TypeScript/React)
+- 独自スクリプト・設定ファイル
+
+これらの独自コードは [MIT License](LICENSE) で、単独取り出し・改変・再配布可能です。
+
+### バイナリ配布物（AGPL v3 が支配的）
+
+本プロジェクトは [kerykeion](https://github.com/g-battaglia/kerykeion)（AGPL v3）を Python サイドカーとして同梱しています。**kerykeion を含む形での配布物全体は、AGPL v3 の条件に従う必要があります**：
+
+- ソースコード（独自部分・改変部分）の公開義務
+- 派生物も AGPL v3 互換ライセンスにする必要あり
+- ネットワーク経由でサービス提供する場合、利用者へのソース公開義務あり
+
+下流でフォーク・再配布・商用利用される際は、kerykeion のライセンス条件を必ずご確認ください。
+
+### 代替手段（独自コードのみ MIT 利用したい場合）
+
+kerykeion を同梱せず、ユーザーが別途インストールする構成に変更すれば、独自コードのみを MIT として運用可能です。
 
 ## アイコン
 

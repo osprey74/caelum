@@ -265,9 +265,29 @@ Starting from the Ascendant as the 1st house cusp, the ecliptic is divided into 
 
 ## License
 
-[MIT License](LICENSE)
+Liber Caeli uses a two-tier licensing structure.
 
-**Note**: This app depends on [kerykeion](https://github.com/g-battaglia/kerykeion), which is licensed under AGPL v3. Distribution of binaries containing kerykeion must comply with AGPL v3 terms.
+### Liber Caeli's own source code (MIT License)
+
+- Tauri (Rust) layer
+- Frontend (TypeScript/React)
+- Project-specific scripts and configuration files
+
+These first-party components are released under the [MIT License](LICENSE) and may be extracted, modified, and redistributed on their own.
+
+### Binary distributions (AGPL v3 governs the whole)
+
+This project bundles [kerykeion](https://github.com/g-battaglia/kerykeion) (AGPL v3) as a Python sidecar. **Any distribution that includes kerykeion as a whole must comply with the terms of AGPL v3**:
+
+- Obligation to publish source code (including first-party and modified parts)
+- Derivative works must also be released under an AGPL v3-compatible license
+- When the software is offered as a network service, source code must be made available to users
+
+Anyone forking, redistributing, or using this project commercially downstream must review kerykeion's license terms carefully.
+
+### Alternative (MIT-only usage of first-party code)
+
+If you reconfigure the project so that kerykeion is not bundled and users install it separately, the first-party code can be operated under MIT alone.
 
 ## Icons
 
