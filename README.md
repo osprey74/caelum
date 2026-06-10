@@ -137,7 +137,19 @@ Register an Anthropic API key to enable real-time streaming interpretations via 
 3. Click "Settings" in the top-right corner of the app
 4. Paste the API key and click "Save"
 
-The API key is stored in a local settings file and is only sent to the Anthropic API.
+#### How the API Key Is Stored
+
+Starting from v1.0.7, the API key is stored in the operating system's secure credential store, not in a plaintext settings file:
+
+- **macOS** — Keychain (service: `com.osprey74.caelum`)
+- **Windows** — Credential Manager (DPAPI-backed)
+- **Linux** — Secret Service (libsecret) via D-Bus
+
+Only non-secret metadata (`anthropic_api_key_saved`, `anthropic_api_key_last4`) is kept in `config.json`. The key is sent only to the Anthropic API endpoint and is never written to logs, crash reports, or exported files (SVG / PNG / PDF).
+
+If you upgraded from an earlier version, the existing plaintext key in `config.json` is automatically migrated to the secure credential store on first launch.
+
+You can remove the stored key at any time from **Settings → Delete API Key**.
 
 #### Estimated API Costs
 

@@ -139,7 +139,19 @@ Anthropic APIキーを登録すると、右サイドバーの「解釈を生成�
 3. アプリ右上の「設定」ボタンをクリック
 4. 表示されたダイアログにAPIキーを貼り付けて「保存」
 
-APIキーはローカルの設定ファイルに保存され、外部には送信されません（Anthropic APIへのリクエスト時のみ使用）。
+#### APIキーの保存方式
+
+v1.0.7 以降、APIキーは平文の設定ファイルではなく、OS のセキュア認証情報ストアに保存されます。
+
+- **macOS** — Keychain（サービス名: `com.osprey74.caelum`）
+- **Windows** — Credential Manager（DPAPI ベース）
+- **Linux** — Secret Service（libsecret）via D-Bus
+
+`config.json` には `anthropic_api_key_saved` と `anthropic_api_key_last4`（末尾4文字）のメタデータのみが保存されます。キー本体は Anthropic API へのリクエスト時にのみ送信され、ログ・クラッシュレポート・エクスポートファイル（SVG / PNG / PDF）には一切書き出されません。
+
+v1.0.6 以前から更新した場合、既存の `config.json` 内の平文APIキーは初回起動時に自動的にセキュア認証情報ストアへ移行されます。
+
+「設定 → APIキーを削除」からいつでもキーを削除できます。
 
 #### API利用コストの目安
 

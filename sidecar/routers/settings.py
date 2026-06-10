@@ -1,38 +1,46 @@
+import os
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from services.settings import get_api_key, set_api_key, delete_api_key, has_api_key, get_house_system, set_house_system
+from services.settings import has_api_key, get_house_system, set_house_system
 
 router = APIRouter(prefix="/settings")
-
-
-class ApiKeyRequest(BaseModel):
-    api_key: str
 
 
 class HouseSystemRequest(BaseModel):
     house_system: str
 
 
+class RefreshApiKeyRequest(BaseModel):
+    api_key: str  # 空文字列は「削除」を意味する
+
+
 @router.get("/api-key-status")
 async def api_key_status():
-    """APIキーが設定されているかを返す（キー自体は返さない）。"""
+    """APIキーが設定されているかを返す（キー自体は返さない）。
+
+    v1.0.7 以降、APIキーの保存・削除は Tauri コマンド経由（OS セキュアストア）。
+    本エンドポイントは「現在のサイドカープロセスに ANTHROPIC_API_KEY が
+    注入されているか」を返すのみ。
+    """
     return {"has_key": has_api_key()}
 
 
-@router.post("/api-key")
-async def save_api_key(body: ApiKeyRequest):
-    key = body.api_key.strip()
-    if not key:
-        raise HTTPException(status_code=400, detail="APIキーが空です。")
-    set_api_key(key)
-    return {"status": "ok"}
+@router.post("/internal/refresh-api-key")
+async def refresh_api_key(body: RefreshApiKeyRequest):
+    """Tauri 側から呼ばれる内部エンドポイント。
 
-
-@router.delete("/api-key")
-async def remove_api_key():
-    delete_api_key()
-    return {"status": "ok"}
+    keyring に保存されている API キーを os.environ にプッシュし、
+    サイドカー再起動なしで反映する。永続化はせず、メモリ上の環境変数のみ更新。
+    空文字列を受け取った場合は環境変数を削除する。
+    """
+    key = body.api_key
+    if key:
+        os.environ["ANTHROPIC_API_KEY"] = key
+    else:
+        os.environ.pop("ANTHROPIC_API_KEY", None)
+    return {"status": "ok", "has_key": has_api_key()}
 
 
 @router.get("/house-system")

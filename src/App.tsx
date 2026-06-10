@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useSidecarReady } from "./hooks/useChart";
-import { fetchChart, fetchApiKeyStatus, fetchHouseSystem, BirthData } from "./lib/api";
+import { fetchChart, fetchApiKeyStatus, fetchHouseSystem, syncApiKeyToSidecar, BirthData } from "./lib/api";
 import BirthDataForm from "./components/BirthDataForm";
 import ProfileList from "./components/ProfileList";
 import ChartWheel, { ChartWheelHandle, GlossaryClickEvent } from "./components/ChartWheel";
@@ -86,7 +86,12 @@ function App() {
 
   useEffect(() => {
     if (ready) {
-      fetchApiKeyStatus().then(setHasApiKey).catch(() => {});
+      // サイドカーに keyring の現在値をプッシュしてから状態取得
+      syncApiKeyToSidecar()
+        .catch(() => {})
+        .finally(() => {
+          fetchApiKeyStatus().then(setHasApiKey).catch(() => {});
+        });
       fetchHouseSystem().then(setHouseSystem).catch(() => {});
     }
   }, [ready]);

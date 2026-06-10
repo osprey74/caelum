@@ -1,8 +1,8 @@
 # HANDOFF: caelum（Liber Caeli）
 
 **作成日**: 2026-03-09
-**最終更新**: 2026-03-12
-**ステータス**: Phase 4 全完了 + v1.0.4 バグ修正（エフェメリスデータ同梱・白画面防止）
+**最終更新**: 2026-06-11
+**ステータス**: Phase 5 完了（API キー保存先を OS セキュア認証情報ストアへ移行 / Issue #1 対応）
 **引き継ぎ先**: Claude Code
 
 ---
@@ -601,8 +601,60 @@ export function useSidecarReady() {
 | Phase 2 | プロファイル保存 / エクスポート / 都市拡充 / UI改善 | ★★★ 即着手 |
 | Phase 3 | トランジット / シナストリー / 追加天体 / ハウス選択 | ★★☆ 次ステップ |
 | Phase 4 | 学習モード / カレンダー / 多言語 | ★☆☆ 将来構想 |
+| Phase 5 | API キー保存先を OS セキュア認証情報ストアへ移行（Issue #1） | ★★★ 完了 |
 
 > **次の着手推奨:** Phase 2-1（プロファイル保存）→ Phase 3-1（トランジットチャート）
+
+---
+
+## Phase 5: セキュリティ強化（API キー保存先の OS セキュアストア移行）
+
+**背景:** Issue #1（@takashi-cw 報告）— v1.0.6 まで Anthropic API キーは `config.json` に平文保存されており、他ローカルプロセスからの読み取り・バックアップ混入・ログ／クラッシュレポートからの偶発的露出のリスクがあった。本フェーズで OS のセキュア認証情報ストア（macOS Keychain / Windows Credential Manager / Linux Secret Service）へ移行する。
+
+**設計方針（案A 採用）:**
+- Rust が keyring を所有、API キー操作はすべて Tauri コマンド経由
+- サイドカー起動時に Rust が keyring からキー取得 → `ANTHROPIC_API_KEY` 環境変数として注入
+- キー更新時はサイドカーを再起動（Tauri コマンドが `/health` 復帰まで待機）
+- マイグレーション処理は Rust 側に実装（既存 `config.json` の平文キーを keyring へ移動）
+- `config.json` には `anthropic_api_key_saved` / `anthropic_api_key_last4` のメタデータのみ残す
+- `house_system` 等の非機密設定は引き続き `config.json` 利用
+
+### Phase 5 完了チェックリスト
+
+```
+[x] 5-1: Rust 側に keyring クレート導入（Cargo.toml）
+[x] 5-2: src-tauri/src/api_key.rs 新規作成（get/set/delete/has + migrate_legacy_key）
+[x] 5-3: Tauri コマンド実装（keyring_has_api_key / keyring_set_api_key /
+       keyring_delete_api_key / keyring_sync_to_sidecar）
+[x] 5-4: サイドカー起動時に keyring → ANTHROPIC_API_KEY 環境変数として注入
+[x] 5-5: API キー更新／削除時にサイドカーへ HTTP refresh で in-memory 反映（再起動不要）
+[x] 5-6: ワンタイムマイグレーション処理を setup() で実行
+       （config.json の anthropic_api_key を keyring へ移動・JSON から除去）
+[x] 5-7: sidecar/services/settings.py の API キー関連処理を環境変数読み取りのみに変更
+       （set_api_key / delete_api_key を削除、house_system 関連は維持）
+[x] 5-8: sidecar/routers/settings.py から /api-key POST/DELETE 削除
+       /settings/internal/refresh-api-key 追加（Tauri 側からのみ呼ばれる内部endpoint）
+[x] 5-9: src/lib/api.ts の API キー関連関数を Tauri invoke 経由に書き換え
+[x] 5-10: ログ・エラーパスの API キー露出監査
+       （interpret.py の _stream_response に _redact_api_key 防御深化）
+[x] 5-11: README.md / README.ja.md の保存方式記述を更新
+[x] 5-12: フロントエンドが sidecar ready 検知後に keyring_sync_to_sidecar を呼ぶ
+       （App.tsx の useEffect）
+[ ] 5-13: 実機動作確認（マイグレーション・新規保存・削除・再起動後の継続）
+[ ] 5-14: v1.0.7 リリース（タグ作成 → CI/CD ビルド → リリースノート）
+[ ] 5-15: Issue #1 に実装 PR / リリースをリンクしてクローズ
+```
+
+**変更ファイル一覧:**
+
+- `src-tauri/Cargo.toml`: keyring v3 + dirs v5 追加
+- `src-tauri/src/api_key.rs`: 新規（keyring 操作 + マイグレーション）
+- `src-tauri/src/lib.rs`: spawn_sidecar() 分離、env 注入、Tauri コマンド登録、setup() でマイグレーション実行
+- `sidecar/services/settings.py`: API キー読み取りを `os.environ.get("ANTHROPIC_API_KEY")` に変更、set_api_key / delete_api_key 削除
+- `sidecar/routers/settings.py`: /api-key POST/DELETE 削除（/api-key-status のみ残す）
+- `sidecar/routers/interpret.py`: `_redact_api_key()` ヘルパー追加、エラーストリームに適用
+- `src/lib/api.ts`: fetchApiKeyStatus / saveApiKey / deleteApiKey を `@tauri-apps/api/core` の invoke 経由に書き換え
+- `README.md` / `README.ja.md`: API キー保存方式セクション追記
 
 
 ---
@@ -1094,6 +1146,122 @@ cd sidecar && pip install -r requirements.txt
   - 日本語/英語切替の動作確認済み
 
 **Phase 4 全チェックリスト完了。**
+
+### 2026-06-11（Phase 5 — API キー保存先の OS セキュア認証情報ストア移行 / Issue #1 対応）
+
+**背景:**
+- GitHub Issue #1（@takashi-cw 報告 / 2026-06-10）でAPIキーが `config.json` に平文保存されている件のセキュリティ改善要望
+- 起票者の指摘内容: ローカルプロセス読み取り・バックアップ混入・ログ／クラッシュレポート露出・ユーザの誤解（「ローカル保存=安全」）の各リスク
+- Issue へ実装方針の謝辞コメント投稿済み: <https://github.com/osprey74/caelum/issues/1#issuecomment-4675385002>
+
+**完了した作業:**
+
+- **Rust 側（src-tauri/）**
+  - `Cargo.toml`: `keyring = "3"`（apple-native / windows-native / sync-secret-service feature）+ `dirs = "5"` 追加
+  - `src/api_key.rs` 新規作成（service: `com.osprey74.caelum`, account: `anthropic_api_key`）:
+    - `get_api_key()` / `set_api_key()` / `delete_api_key()` / `has_api_key()`
+    - `migrate_legacy_key()`: 起動時に `config.json` の `anthropic_api_key` フィールドを検出 → keyring へ移動 → JSON から削除し `anthropic_api_key_saved` / `anthropic_api_key_last4` メタデータに置換
+    - `update_metadata()`: keyring 更新時に `config.json` のメタデータも同期
+    - `last4()`: 末尾4文字取得ヘルパー
+  - `src/lib.rs` 改修:
+    - `spawn_sidecar()` 関数に分離、keyring からキー取得して `.env("ANTHROPIC_API_KEY", key)` で注入
+    - `wait_for_sidecar_ready()`: 127.0.0.1:8765 への TCP 接続成功を 15 秒間ポーリング
+    - Tauri コマンド3種登録（`keyring_has_api_key` / `keyring_set_api_key` / `keyring_delete_api_key`）
+    - `keyring_set_api_key` / `keyring_delete_api_key` はキー保存後に `kill_sidecar` → `spawn_sidecar` → `wait_for_sidecar_ready` の流れで透過的にサイドカー再起動
+    - `setup()` の最初で `migrate_legacy_key()` を実行
+
+- **サイドカー側（sidecar/）**
+  - `services/settings.py`:
+    - `get_api_key()` を `os.environ.get("ANTHROPIC_API_KEY")` 読み取りのみに変更
+    - `set_api_key()` / `delete_api_key()` を削除（責務を Rust 側へ移譲）
+    - `has_api_key()` / `get_house_system()` / `set_house_system()` は維持
+  - `routers/settings.py`:
+    - `/settings/api-key` POST / DELETE エンドポイントを削除
+    - `/settings/api-key-status` GET（現プロセスに `ANTHROPIC_API_KEY` が注入されているか）のみ残す
+    - `/settings/house-system` GET/POST は維持
+  - `routers/interpret.py`:
+    - `_redact_api_key()` ヘルパー追加（万一エラーメッセージに API キーが含まれた場合の防御深化）
+    - `_stream_response()` の `except` ブロックでエラー文字列を伏字化してからクライアントへ返送
+
+- **フロントエンド側（src/）**
+  - `lib/api.ts`:
+    - `fetchApiKeyStatus()` / `saveApiKey()` / `deleteApiKey()` を `@tauri-apps/api/core` の `invoke()` 経由に書き換え
+    - HTTP `/settings/api-key*` 呼び出しを完全に廃止
+  - `components/ApiKeyDialog.tsx`: 既存の「APIキーを削除」ボタンを維持（Issue suggestion #3 は実装済みだった）
+
+- **ドキュメント**
+  - `README.md`: 「How the API Key Is Stored」セクション追加（3 OS の保存先・メタデータのみ JSON 保持・マイグレーション自動実行・削除手順）
+  - `README.ja.md`: 同等の「APIキーの保存方式」セクション追加
+
+**設計上の注意点（次セッションへの引き継ぎ）:**
+
+- サイドカー再起動は 3〜5 秒程度の遅延を発生させる。`ApiKeyDialog` の保存ボタンは `saving=true` 状態でフィードバック表示。
+- `useSidecarReady` は初回マウント時のみポーリングするため、再起動中の競合に注意。現状は Tauri コマンドが `/health` 復帰を待ってから resolve するため、フロントエンドからは透過的。
+- マイグレーションが失敗した場合（keyring アクセス権限不足等）、`config.json` の平文キーは残存する。ユーザは手動でファイルを削除する必要あり。
+- v1.0.7 リリース時の動作確認項目:
+  1. v1.0.6 で平文キー保存済みの環境からアップグレード → 自動マイグレーション動作確認（config.json から `anthropic_api_key` フィールド消失・`anthropic_api_key_saved: true` 出現）
+  2. 新規環境でキー登録 → OS キーチェーン／資格情報マネージャに保存されることを確認
+  3. キー削除ボタン → keyring からエントリ消失確認
+  4. アプリ再起動後も AI 解釈が引き続き動作することを確認
+
+**残作業:**
+
+- 5-13: 実機動作確認（dev ビルドで動作確認 → リリースビルドでマイグレーション確認）
+- 5-14: v1.0.7 リリース（タグ作成 → CI/CD ビルド → リリースノート EN/JA）
+- 5-15: Issue #1 への完了報告コメント＋クローズ
+
+### 2026-06-11（Phase 5 改修 — サイドカー再起動を廃止して HTTP リフレッシュ方式へ）
+
+**背景:**
+- 初版実装ではキー更新時に「kill_sidecar → spawn_sidecar → /health 待機」でサイドカーを再起動していたが、dev モードではサイドカーバイナリが 1 バイトのスタブのため `Failed to spawn sidecar (os error 216)` で起動できず、手動 uvicorn 起動時に新方式で API キーが伝達できない問題が発覚
+- 解決策として「サイドカーに内部 HTTP リフレッシュエンドポイントを設け、Tauri が keyring 保存後に in-memory プッシュする」設計に切り替え（B 案）
+- セキュリティモデル上の変化なし（永続化は keyring のまま、127.0.0.1 内 HTTP は変更前から発生していた）
+
+**完了した作業:**
+
+- **サイドカー側**
+  - `sidecar/routers/settings.py`:
+    - `POST /settings/internal/refresh-api-key` 追加
+    - 受信した `api_key` で `os.environ["ANTHROPIC_API_KEY"]` を更新（空文字列ならキー削除）
+    - 永続化はせず、in-memory のみ反映（永続化責務は Tauri 側 keyring）
+
+- **Rust 側（src-tauri/src/lib.rs）**
+  - キー更新時のサイドカー再起動ロジックを撤廃
+  - `http_post_refresh_key(key: &str)`: raw TCP で `/settings/internal/refresh-api-key` に POST するヘルパー追加（外部依存追加なし、`serde_json::to_string` で JSON escape）
+  - Tauri コマンドのシグネチャ簡素化:
+    - `keyring_set_api_key(key)` → keyring 保存 → HTTP refresh（失敗時は次回 sync で反映）
+    - `keyring_delete_api_key()` → keyring 削除 → HTTP refresh（空文字列送信）
+    - `keyring_sync_to_sidecar()` 新規追加（keyring 現在値をサイドカーに in-memory プッシュ、フロントから呼ぶ）
+  - setup() でバックグラウンドスレッドを起動し、サイドカー ready 検知後に初回 sync を実行（dev 環境の uvicorn 手動起動を吸収）
+  - `wait_for_sidecar_ready()` の timeout を引数化（初回 sync は最大 60 秒待機）
+
+- **フロントエンド側**
+  - `src/lib/api.ts`: `syncApiKeyToSidecar()` 追加
+  - `src/App.tsx`: `useSidecarReady` が true になった直後に `syncApiKeyToSidecar()` を呼んでから `fetchApiKeyStatus()` を取得する流れに変更
+
+**新しい動作フロー:**
+
+1. アプリ起動 → Tauri が migration 実行 → サイドカー spawn 試行（production は成功、dev は失敗）
+2. バックグラウンドで /health を 60 秒間ポーリング → ready になったら keyring 現在値を HTTP refresh
+3. フロントが ready 検知 → `syncApiKeyToSidecar` 呼び出し（バックグラウンドと冪等、どちらが先でも問題なし）
+4. ユーザがキー更新 → keyring 保存 → HTTP refresh で in-memory 反映（再起動レイテンシ無し、~50ms）
+
+**dev 環境での確認手順（更新版）:**
+
+別ターミナルで uvicorn を起動してから tauri dev を起動：
+
+```powershell
+# Terminal 1
+cd g:\dev\caelum\sidecar
+.\.venv\Scripts\Activate.ps1
+uvicorn main:app --port 8765
+
+# Terminal 2
+cd g:\dev\caelum
+npm run tauri dev
+```
+
+uvicorn を ANTHROPIC_API_KEY 未設定で起動しても、Tauri が ready 検知後に keyring から in-memory プッシュするため、AI 解釈が動作する。
 
 ### 2026-03-12（v1.0.4 — PyInstallerエフェメリスデータ欠落修正）
 

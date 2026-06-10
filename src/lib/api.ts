@@ -165,28 +165,26 @@ export async function searchCity(query: string, lang?: string): Promise<Geocodin
   return data.results;
 }
 
-// --- APIキー設定 ---
+// --- APIキー設定（OS セキュア認証情報ストア経由・Tauri コマンド） ---
+
+import { invoke } from "@tauri-apps/api/core";
 
 export async function fetchApiKeyStatus(): Promise<boolean> {
-  const res = await fetch(`${SIDECAR_URL}/settings/api-key-status`);
-  const data = await res.json();
-  return data.has_key;
+  return await invoke<boolean>("keyring_has_api_key");
 }
 
 export async function saveApiKey(apiKey: string): Promise<void> {
-  const res = await fetch(`${SIDECAR_URL}/settings/api-key`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ api_key: apiKey }),
-  });
-  if (!res.ok) throw new Error(await res.text());
+  await invoke("keyring_set_api_key", { key: apiKey });
 }
 
 export async function deleteApiKey(): Promise<void> {
-  const res = await fetch(`${SIDECAR_URL}/settings/api-key`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error(await res.text());
+  await invoke("keyring_delete_api_key");
+}
+
+/// keyring の現在値をサイドカーに in-memory プッシュする。
+/// サイドカー ready 検知後に呼ぶ。dev / production で冪等。
+export async function syncApiKeyToSidecar(): Promise<void> {
+  await invoke("keyring_sync_to_sidecar");
 }
 
 // --- ハウスシステム設定 ---

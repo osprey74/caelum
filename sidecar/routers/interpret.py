@@ -76,6 +76,13 @@ def _build_subject(name: str, year: int, month: int, day: int,
     )
 
 
+def _redact_api_key(text: str, api_key: str) -> str:
+    """エラーメッセージ等から API キーを伏字化（万一含まれていた場合の防御）。"""
+    if api_key and api_key in text:
+        return text.replace(api_key, "***REDACTED***")
+    return text
+
+
 def _stream_response(system_prompt: str, user_content: str, api_key: str):
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -91,7 +98,8 @@ def _stream_response(system_prompt: str, user_content: str, api_key: str):
                     yield f"data: {json.dumps({'text': text}, ensure_ascii=False)}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+            safe_msg = _redact_api_key(str(e), api_key)
+            yield f"data: {json.dumps({'error': safe_msg}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
         generate(),

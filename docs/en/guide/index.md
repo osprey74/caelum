@@ -2,7 +2,7 @@
 
 Liber Caeli (Latin for "Book of the Heavens") is a desktop application for creating and interpreting Western astrology natal charts. It combines precise astronomical calculations with AI-powered interpretation, designed for users ranging from complete beginners to experienced practitioners.
 
-**Supported version: Liber Caeli v1.0.6**
+**Supported version: Liber Caeli v1.0.7**
 
 ## Table of Contents
 

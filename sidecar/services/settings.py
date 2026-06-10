@@ -1,7 +1,10 @@
-"""APIキー設定の永続化管理。
+"""ハウスシステム設定の永続化管理。
 
-config.json にAPIキーを保存し、環境変数はフォールバックとして使う。
-保存先はOSのアプリデータディレクトリ:
+config.json には API キー以外の非機密設定のみを保存する。
+API キーは v1.0.7 以降、Tauri 側で OS のセキュア認証情報ストアに保存され、
+サイドカー起動時に環境変数 ANTHROPIC_API_KEY として注入される。
+
+config.json の保存先:
   Windows: %APPDATA%/liber-caeli/config.json
   macOS:   ~/Library/Application Support/liber-caeli/config.json
   Linux:   ~/.config/liber-caeli/config.json
@@ -43,28 +46,16 @@ def _save_config(config: dict) -> None:
         json.dump(config, f, ensure_ascii=False, indent=2)
 
 
+# --- API キー（環境変数経由のみ・読み取り専用） ---
+
 def get_api_key() -> str | None:
-    """config.json からAPIキーを取得。"""
-    config = _load_config()
-    return config.get("anthropic_api_key") or None
-
-
-def set_api_key(key: str) -> None:
-    """APIキーを config.json に保存。"""
-    config = _load_config()
-    config["anthropic_api_key"] = key
-    _save_config(config)
-
-
-def delete_api_key() -> None:
-    """config.json からAPIキーを削除。"""
-    config = _load_config()
-    config.pop("anthropic_api_key", None)
-    _save_config(config)
+    """環境変数から API キーを取得。Tauri が keyring から取り出して注入する。"""
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    return key if key else None
 
 
 def has_api_key() -> bool:
-    """APIキーが設定されているか。"""
+    """API キーが設定されているか。"""
     return get_api_key() is not None
 
 
