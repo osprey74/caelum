@@ -4,6 +4,8 @@
 
 [日本語版 README はこちら](README.ja.md)
 
+**Website:** https://caeli.osprey74.com
+
 ## What is Western Astrology?
 
 Western astrology is a traditional European system based on the idea that the positions of celestial bodies (Sun, Moon, planets, etc.) at the time of birth influence an individual's personality and tendencies.
@@ -172,6 +174,10 @@ Chart generation and prompt generation work without an API key.
 3. The generated prompt (system instructions + chart data) is displayed
 4. Click "Copy" to copy to clipboard
 5. Paste into your preferred AI service (ChatGPT, Gemini, Claude Web, etc.) for interpretation
+
+## Website
+
+The introduction site https://caeli.osprey74.com is built from `site/` (Astro, bun) and deployed over FTP by `.github/workflows/site.yml` when `site/**` changes on `main`. The deploy needs the repository secrets `ONAMAE_HOST`, `ONAMAE_FTP_USER` and `ONAMAE_FTP_PASSWORD`. When you release a new version, update `VERSION` and the sizes in `site/src/content.ts`.
 
 ## Download & Installation
 

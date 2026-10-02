@@ -4,6 +4,8 @@
 
 [English README](README.md)
 
+**公式サイト：** https://caeli.osprey74.com
+
 ## 西洋占星術とは？
 
 西洋占星術は、出生時の天体の配置（太陽・月・惑星など）が個人の性格や傾向に影響を与えるという考え方に基づく、ヨーロッパ発祥の伝統的な体系です。
@@ -174,6 +176,10 @@ APIキーを登録していなくても、チャート生成とプロンプト�
 3. 生成されたプロンプト（システム指示＋チャートデータ）が表示される
 4. 「コピー」ボタンでクリップボードにコピー
 5. お好みのAIサービス（ChatGPT、Gemini、Claude Web等）に貼り付けて解釈を依頼
+
+## 公式サイト
+
+紹介サイト https://caeli.osprey74.com は `site/`（Astro、bun）で作り、`site/**` を main に push すると `.github/workflows/site.yml` が FTP で配置します。配置には、リポジトリの Secrets に `ONAMAE_HOST`・`ONAMAE_FTP_USER`・`ONAMAE_FTP_PASSWORD` が必要です。新しいバージョンをリリースしたときは、`site/src/content.ts` の `VERSION` とファイルの容量も更新してください。
 
 ## ダウンロードとインストール
 

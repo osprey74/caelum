@@ -13,6 +13,7 @@
 - src/         React フロントエンド
 - sidecar/     Python サイドカー（FastAPI, ポート8765固定）
 - src-tauri/   Tauri設定・Rustコード
+- site/        紹介サイト（Astro、bun）。https://caeli.osprey74.com に `.github/workflows/site.yml` で FTP 配置
 
 ## 開発コマンド
 ```bash
@@ -38,6 +39,7 @@ cd sidecar && pip install -r requirements.txt
 - PyInstallerでサイドカーをバイナリ化 → Tauriでインストーラー生成
 - バージョン更新対象: `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`
 - `Cargo.lock` は `cargo generate-lockfile` で自動更新
+- リリース後は `site/src/content.ts` の `VERSION` とダウンロードの容量（`DOWNLOADS`）も更新する
 
 ## コーディング規約
 - TypeScript: strict mode、型定義は src/types/ に集約
