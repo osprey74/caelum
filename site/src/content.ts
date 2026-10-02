@@ -1,12 +1,12 @@
 // Text of the introduction site, in Japanese and English. Facts here must match the app (README.ja.md, README.md).
 
-export const VERSION = "1.0.7";
+export const VERSION = "1.0.8";
 export const REPO = "https://github.com/osprey74/caelum";
 const DL = `${REPO}/releases/download/v${VERSION}`;
 export const DOWNLOADS = {
   windows: { url: `${DL}/caelum_${VERSION}_x64-setup.exe`, mb: 88 },
   macArm: { url: `${DL}/caelum_${VERSION}_aarch64.dmg`, mb: 82 },
-  macIntel: { url: `${DL}/caelum_${VERSION}_x64.dmg`, mb: 83 },
+  macIntel: { url: `${DL}/caelum_${VERSION}_x64.dmg`, mb: 82 },
 };
 export const RELEASE = `${REPO}/releases/tag/v${VERSION}`;
 export const ARCANORUM = "https://arcanorum.osprey74.com";
