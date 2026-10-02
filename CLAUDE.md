@@ -38,7 +38,7 @@ cd sidecar && pip install -r requirements.txt
 - GitHub Actions（Windows x86_64 + macOS Intel/ARM）でタグプッシュ時に自動ビルド
 - PyInstallerでサイドカーをバイナリ化 → Tauriでインストーラー生成
 - バージョン更新対象: `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`
-- `Cargo.lock` は `cargo generate-lockfile` で自動更新
+- `Cargo.lock` はバージョン更新後に `cd src-tauri && cargo update --workspace` で自分のパッケージだけ更新する（`cargo generate-lockfile` は依存をすべて最新化し、Tauri の Rust クレートが npm の `@tauri-apps/*` より新しい minor になってビルドが失敗する。v1.0.8 で発生）
 - リリース後は `site/src/content.ts` の `VERSION` とダウンロードの容量（`DOWNLOADS`）も更新する
 
 ## コーディング規約
