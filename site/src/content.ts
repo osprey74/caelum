@@ -35,7 +35,7 @@ export interface Content {
   description: string;
   nav: { features: string; screens: string; ai: string; download: string; faq: string };
   hero: { subtitle: string; lead: string; cta: string; meta: string; notes: string };
-  intro: { heading: string; body: string[] };
+  intro: { heading: string; body: string[]; sister: string };
   features: { heading: string; items: Item[] };
   screens: { heading: string; note: string; main: Shot; panels: Shot[]; extra: Shot };
   ai: { heading: string; body: string[]; points: Item[]; cost: string };
@@ -83,6 +83,7 @@ const ja: Content = {
       "Liber Caeli（リベル・カエリ）は、ラテン語で「天空の書」。タロット占いアプリ Liber Arcanorum と同じ Caelum シリーズの、西洋占星術アプリです。",
       "ネイタルチャート（出生図）は、生まれた瞬間の太陽・月・惑星の配置を描いた「空の地図」です。天体・サイン・ハウス・アスペクトの関係を図と一覧で示し、用語の意味や AI の読み解きを添えて、チャートを読む手助けをします。",
     ],
+    sister: "姉妹アプリ Liber Arcanorum（タロット）の公式サイトへ",
   },
   features: {
     heading: "機能",
@@ -184,6 +185,7 @@ const en: Content = {
       "Liber Caeli is Latin for “Book of the Heavens”. It is a Western astrology app of the Caelum series, sister to the tarot app Liber Arcanorum.",
       "A natal chart is a map of the Sun, Moon and planets at the moment of birth. The app draws the planets, signs, houses and aspects as a chart and a table, and helps you read them with a glossary and, if you like, an AI interpretation.",
     ],
+    sister: "Visit the sister app Liber Arcanorum (tarot)",
   },
   features: {
     heading: "Features",
