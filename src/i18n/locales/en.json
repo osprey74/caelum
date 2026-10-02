@@ -95,7 +95,15 @@
   "calendar": {
     "title": "Monthly Calendar",
     "error": "Calendar calculation failed.",
-    "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "weekdays": [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun"
+    ],
     "monthEvents": "Events for {{month}}/{{day}}",
     "noEvents": "No events on this day",
     "monthlyFocus": "Monthly Focus",
@@ -191,5 +199,25 @@
   },
   "pdf": {
     "reportTitle": "Natal Chart Report"
+  },
+  "about": {
+    "button": "About",
+    "close": "Close",
+    "version": "Version {{version}} · Western astrology app of the Caelum series",
+    "howTo": "How to use",
+    "steps": [
+      "Enter the name, date, time and place of birth on the left, then press “Create Chart”.",
+      "Save birth data you use often as a profile with “Save”; next time, just choose it.",
+      "Use the tabs on the right for the natal reading, transits, synastry and the monthly calendar.",
+      "To use AI interpretations, register your Anthropic API key in Settings (usage is billed to you). Without a key, “Generate Prompt” lets you use another AI."
+    ],
+    "storage": "Profiles and settings are kept on this computer.",
+    "notesTitle": "Please note",
+    "notes": "Astrology is for self-understanding and reflection; it does not predict the future. For decisions about health, money or the law, please consult a professional.",
+    "licenseTitle": "Licenses",
+    "licenseCode": "Original source code: MIT License",
+    "licenseAgpl": "Distributed program as a whole: follows the AGPL v3 because of the bundled kerykeion used for the astronomical calculations.",
+    "site": "Official site",
+    "releases": "Releases"
   }
 }

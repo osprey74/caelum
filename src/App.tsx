@@ -14,6 +14,7 @@ import SynastryPanel from "./components/SynastryPanel";
 import CalendarPanel from "./components/CalendarPanel";
 import ExportButtons from "./components/ExportButtons";
 import ApiKeyDialog from "./components/ApiKeyDialog";
+import AboutDialog from "./components/AboutDialog";
 import { ChartResponse, DualChartResponse } from "./types/astrology";
 
 type RightTab = "interpretation" | "transit" | "synastry" | "calendar";
@@ -27,6 +28,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [houseSystem, setHouseSystem] = useState("P");
   const [formInitialData, setFormInitialData] = useState<BirthData | null>(null);
   const [natalInterpText, setNatalInterpText] = useState("");
@@ -148,6 +150,18 @@ function App() {
           Liber Caeli
           <span className="text-sm font-normal text-gray-500 ml-2">{t("app.subtitle")}</span>
         </h1>
+        <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowAbout(true)}
+          className="flex items-center gap-1.5 rounded bg-gray-800 px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 hover:bg-gray-700 transition-colors"
+          title={t("about.button")}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+            <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" />
+          </svg>
+          {t("about.button")}
+        </button>
         <button
           type="button"
           onClick={() => setShowSettings(true)}
@@ -159,6 +173,7 @@ function App() {
           </svg>
           {t("app.settings")}
         </button>
+        </div>
       </header>
 
       <div className="flex h-[calc(100vh-53px)]">
@@ -265,6 +280,7 @@ function App() {
       </div>
 
       {/* Settings Dialog */}
+      {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
       {showSettings && (
         <ApiKeyDialog
           hasKey={hasApiKey}
